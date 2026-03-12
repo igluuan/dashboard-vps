@@ -13,6 +13,7 @@
             --card-bg: white;
             --card-shadow: rgba(0,0,0,0.1);
             --header-color: #333;
+            --text-muted: #6c757d;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -22,7 +23,12 @@
                 --card-bg: #27272a; /* zinc-800 */
                 --card-shadow: rgba(0,0,0,0.5);
                 --header-color: #f4f4f5; /* zinc-100 */
+                --text-muted: #a1a1aa;
             }
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
@@ -38,10 +44,11 @@
 
         h2, h3 {
             color: var(--header-color);
+            margin-top: 0;
         }
 
         .container {
-            width: 90%;
+            width: 100%;
             max-width: 1000px;
             background: var(--card-bg);
             padding: 20px;
@@ -51,32 +58,54 @@
         }
 
         .stats {
-            display: flex;
-            justify-content: space-around;
-            text-align: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 10px;
+            margin-bottom: 20px;
         }
 
         .stat-item {
             padding: 15px;
             background: rgba(0,0,0,0.05);
             border-radius: 5px;
-            min-width: 120px;
+        }
+        
+        .stat-item h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
         }
 
-        canvas {
-            max-height: 300px;
+        .stat-item p {
+            margin: 0;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .chart-wrap {
+            position: relative;
+            height: 200px;
             width: 100%;
         }
 
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
         /* Docker Containers Table */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
+            min-width: 100%;
         }
+
         th, td {
             padding: 10px;
             text-align: left;
@@ -88,14 +117,20 @@
         
         .status-running { color: green; font-weight: bold; }
         .status-exited { color: red; font-weight: bold; }
+        .status-other { color: gray; font-weight: bold; }
 
         button {
-            padding: 5px 10px;
+            padding: 8px 12px;
             margin-right: 5px;
             cursor: pointer;
             border: none;
             border-radius: 3px;
             color: white;
+            font-size: 14px;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
         .btn-start { background-color: #28a745; }
         .btn-stop { background-color: #dc3545; }
@@ -120,90 +155,984 @@
             white-space: pre-wrap;
             font-size: 14px;
         }
+
+        /* Login Section */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .login-box {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px var(--card-shadow);
+            text-align: center;
+            width: 90%;
+            max-width: 360px;
+        }
+        .login-box input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            min-height: 44px;
+        }
+        .login-box button {
+            width: 100%;
+            background-color: #007bff;
+            padding: 10px;
+            font-size: 16px;
+            min-height: 44px;
+        }
+        #login-error {
+            color: red;
+            margin-top: 10px;
+            display: none;
+        }
+        #login-message {
+            margin-top: 10px;
+            display: none;
+            font-weight: bold;
+        }
+        .msg-warn { color: #eab308; }
+        .msg-error { color: #ef4444; }
+
+        /* Header with Logout */
+        .dashboard-header {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .btn-logout {
+            background-color: #6c757d;
+        }
+
+        /* Connection Status */
+        #connection-status {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .status-connected { color: #22c55e; }
+        .status-connected .status-dot { background-color: #22c55e; }
+        .status-disconnected { color: #ef4444; }
+        .status-disconnected .status-dot { background-color: #ef4444; }
+        .status-reconnecting { color: #eab308; }
+        .status-reconnecting .status-dot { 
+            background-color: #eab308;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+            }
+
+            .dashboard-header {
+                flex-wrap: wrap;
+                justify-content: center;
+                text-align: center;
+                gap: 10px;
+            }
+            
+            .dashboard-header h2 {
+                width: 100%;
+                font-size: 1.5rem;
+                margin-bottom: 5px;
+            }
+            
+            .dashboard-header .btn-logout {
+                font-size: 0.9rem;
+                padding: 8px 16px;
+                width: 100%;
+            }
+
+            /* Table Adjustments */
+            /* Hide Image and Ports column */
+            th:nth-child(2), td:nth-child(2),
+            th:nth-child(3), td:nth-child(3) {
+                display: none;
+            }
+            
+            /* Actions column flex wrap */
+            td:last-child {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+                min-width: 140px; 
+            }
+            
+            td:last-child button {
+                flex: 1 1 45%; 
+                margin-right: 0;
+                justify-content: center;
+            }
+
+            /* Logs */
+            #logs-container {
+                height: auto;
+                max-height: 60vh;
+            }
+            
+            #logs-section button {
+                width: 100%;
+            }
+
+            /* Chart */
+            .chart-wrap {
+                height: 150px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .stats {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            }
+            
+            .dashboard-header h2 {
+                font-size: 1.3rem;
+            }
+        }
+
+        /* Alert Styles */
+        .val-ok { color: #22c55e; }
+        .val-warn { color: #eab308; }
+        .val-danger { color: #ef4444; }
+
+        #alert-banner {
+            width: 100%;
+            max-width: 1000px;
+            background-color: rgba(239, 68, 68, 0.15);
+            border: 1px solid #ef4444;
+            border-radius: 8px;
+            color: #ef4444;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        /* Log Highlights */
+        .log-error { color: #f87171; }
+        .log-warn { color: #fbbf24; }
+        .log-info { color: #a1a1aa; }
+        
+        mark {
+            background: rgba(234,179,8,0.3);
+            color: inherit;
+            border-radius: 2px;
+            padding: 0 2px;
+        }
+
+        /* Bot Card */
+        #bot-card {
+            border-left: 3px solid #22c55e;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            display: none; /* Hidden by default */
+        }
+        
+        .bot-status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            background-color: #ccc;
+        }
+        
+        .bot-info {
+            display: flex;
+            align-items: center;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .bot-details {
+            color: var(--text-muted);
+            font-size: 0.9em;
+            margin-left: 10px;
+            font-weight: normal;
+        }
+
+        /* Events Log */
+        #events-log {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border: 1px solid rgba(63,63,70,0.3);
+            border-radius: 5px;
+            padding: 10px;
+            background: var(--card-bg);
+        }
+        .event-item {
+            display: flex;
+            gap: 8px;
+            font-size: 0.8rem;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(63,63,70,0.3);
+            align-items: center;
+        }
+        .event-danger { color: #f87171; }
+        .event-warn { color: #fbbf24; }
+        .event-info { color: #a1a1aa; }
+
+        /* Badge */
+        .badge {
+            background-color: #ef4444;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            vertical-align: super;
+            margin-left: 5px;
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            #bot-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            #bot-card .bot-actions {
+                width: 100%;
+                display: flex;
+                gap: 5px;
+            }
+            #bot-card .bot-actions button {
+                flex: 1;
+            }
+        }
+
+        /* Feature 10: Shortcuts Modal */
+        #shortcuts-modal {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        #shortcuts-modal.open { display: flex; }
+
+        .shortcuts-card {
+            background: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid rgba(128,128,128,0.2);
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%; max-width: 400px;
+            box-shadow: 0 4px 20px var(--card-shadow);
+        }
+        
+        .shortcuts-header {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 16px;
+            border-bottom: 1px solid rgba(128,128,128,0.2);
+            padding-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .shortcut-row {
+            display: flex; justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(128,128,128,0.1);
+            font-size: 0.9rem;
+        }
+        .shortcut-row:last-child { border-bottom: none; }
+
+        kbd {
+            background: rgba(128,128,128,0.15);
+            border: 1px solid rgba(128,128,128,0.3);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            min-width: 24px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .footer-hint {
+            text-align: center;
+            margin-top: 30px;
+            margin-bottom: 20px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        
+        /* Visual flash animation */
+        @keyframes flash-update {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .flash-active {
+            animation: flash-update 0.3s ease-in-out;
+        }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>Server Status</h2>
-        <div class="stats">
-            <div class="stat-item">
-                <h3>Uptime</h3>
-                <p id="uptime">Loading...</p>
-            </div>
-            <div class="stat-item">
-                <h3>CPU</h3>
-                <p id="cpu-val">0%</p>
-            </div>
-            <div class="stat-item">
-                <h3>RAM</h3>
-                <p id="ram-val">0%</p>
-            </div>
-            <div class="stat-item">
-                <h3>Disk</h3>
-                <p id="disk-val">0%</p>
+    <!-- Login Overlay -->
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2>Login</h2>
+            <input type="password" id="token-input" placeholder="Enter Token">
+            <button onclick="login()">Enter</button>
+            <p id="login-error">Invalid Token</p>
+            <p id="login-message"></p>
+        </div>
+    </div>
+
+    <!-- Dashboard Content (Hidden by default) -->
+    <div id="dashboard-content" style="display: none; width: 100%; flex-direction: column; align-items: center;">
+        
+        <div class="dashboard-header">
+            <h2>VPS Dashboard <span id="event-badge" class="badge">0</span></h2>
+            <div style="display: flex; align-items: center;">
+                <div id="connection-status" class="status-disconnected" style="display: none;">
+                    <div class="status-dot"></div> <span id="conn-text">Desconectado</span>
+                </div>
+                <button class="btn-logout" onclick="logout()">Logout</button>
             </div>
         </div>
-        <canvas id="metricsChart"></canvas>
+
+        <div id="alert-banner"></div>
+
+        <!-- Bot Card -->
+        <div id="bot-card" class="container">
+            <div class="bot-info">
+                <span id="bot-indicator" class="bot-status-indicator"></span>
+                <span>🤖 WhatsApp Bot</span>
+                <span id="bot-details" class="bot-details">loading...</span>
+            </div>
+            <div class="bot-actions">
+                <button class="btn-restart" id="bot-restart-btn">Restart</button>
+                <button class="btn-logs" id="bot-logs-btn">Logs</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <h3>Server Status</h3>
+            <div class="stats">
+                <div class="stat-item">
+                    <h3>Uptime</h3>
+                    <p id="uptime">Loading...</p>
+                </div>
+                <div class="stat-item">
+                    <h3>CPU</h3>
+                    <p id="cpu-val">0%</p>
+                </div>
+                <div class="stat-item">
+                    <h3>RAM</h3>
+                    <p id="ram-val">0%</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Disk</h3>
+                    <p id="disk-val">0%</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Rede</h3>
+                    <p id="net-val" style="font-size: 1em;">
+                        <span style="color: #22c55e;">↓ <span id="net-rx">0 B/s</span></span>
+                        <span style="color: #3b82f6; margin-left: 8px;">↑ <span id="net-tx">0 B/s</span></span>
+                    </p>
+                </div>
+            </div>
+            <h2>Histórico — últimos 60s</h2>
+            <div class="chart-wrap">
+                <canvas id="metricsChart"></canvas>
+            </div>
+        </div>
+
+        <div class="container">
+            <h3>Docker Containers</h3>
+            <input id="container-filter" type="text" placeholder="🔍 Filtrar por nome..." oninput="filterContainers()" title="Pressione / para focar"
+                   style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <div class="table-responsive">
+                <table id="containers-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Image</th>
+                            <th>Portas</th>
+                            <th>Uptime</th>
+                            <th>State</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows will be added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="container" id="events-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                 <h3>Histórico de Eventos</h3>
+                 <button onclick="Notifier.clearHistory()" style="background-color: #6c757d; font-size: 0.8rem; padding: 4px 8px; min-height: 30px;">Limpar Histórico</button>
+            </div>
+            <div id="events-log"></div>
+        </div>
+
+        <div class="container" id="logs-section" style="display:none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h2 id="logs-title" style="margin: 0;">Logs</h2>
+                <div>
+                     <button onclick="copyLogs()" id="btn-copy-logs" style="background-color: #3b82f6; margin-right: 5px;">Copiar</button>
+                     <button onclick="closeLogs()" style="background-color: #6c757d;" title="Pressione L ou Esc">Fechar</button>
+                </div>
+            </div>
+            <input type="text" id="log-filter" placeholder="Filtrar logs..." style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; background: #27272a; color: white; border-color: #3f3f46;">
+            <div id="logs-container"></div>
+        </div>
+        
+        <div class="footer-hint">
+            Pressione <kbd>?</kbd> para ver os atalhos de teclado
+        </div>
     </div>
 
-    <div class="container">
-        <h2>Docker Containers</h2>
-        <table id="containers-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Image</th>
-                    <th>State</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Rows will be added here -->
-            </tbody>
-        </table>
-    </div>
-
-    <div class="container" id="logs-section" style="display:none;">
-        <h2 id="logs-title">Logs</h2>
-        <div id="logs-container"></div>
-        <button onclick="closeLogs()" style="margin-top: 10px; background-color: #6c757d;">Close Logs</button>
+    <!-- Shortcuts Modal -->
+    <div id="shortcuts-modal">
+        <div class="shortcuts-card">
+            <div class="shortcuts-header">
+                Atalhos de Teclado
+                <span style="cursor:pointer; font-size:1.5rem;" onclick="toggleShortcuts()">×</span>
+            </div>
+            <div class="shortcut-row"><span>Atualizar Containers</span> <kbd>R</kbd></div>
+            <div class="shortcut-row"><span>Atualizar Estatísticas</span> <kbd>S</kbd></div>
+            <div class="shortcut-row"><span>Focar Busca</span> <kbd>/</kbd></div>
+            <div class="shortcut-row"><span>Fechar Logs / Limpar Busca</span> <kbd>Esc</kbd></div>
+            <div class="shortcut-row"><span>Logs do Bot (se ativo)</span> <kbd>B</kbd></div>
+            <div class="shortcut-row"><span>Fechar Logs</span> <kbd>L</kbd></div>
+            <div class="shortcut-row"><span>Ajuda</span> <kbd>?</kbd></div>
+        </div>
     </div>
 
     <script>
-        const socket = io();
-        let currentLogContainerId = null;
+        const THRESHOLD_WARN = 70;
+        const THRESHOLD_DANGER = 85;
+        const SESSION_TIMEOUT_MS = 8 * 60 * 60 * 1000; // 8 hours
 
-        // --- Charts & Metrics ---
-        const ctx = document.getElementById('metricsChart').getContext('2d');
-        const metricsChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['CPU (%)', 'RAM (%)', 'Disk (%)'],
-                datasets: [{
-                    label: 'System Usage',
-                    data: [0, 0, 0],
-                    backgroundColor: [
-                        'rgba(255, 99, 132, 0.6)',
-                        'rgba(54, 162, 235, 0.6)',
-                        'rgba(255, 206, 86, 0.6)'
-                    ],
-                    borderColor: [
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 206, 86, 1)'
-                    ],
-                    borderWidth: 1
-                }]
+        const Notifier = {
+            activeEvents: new Map(),
+            eventHistory: [],
+            
+            push: function(type, message, key) {
+                // Check if active
+                if (key && this.activeEvents.has(key)) {
+                    return; // Already active
+                }
+
+                // Add to history
+                this.addHistory(type, message);
+                
+                if (key) {
+                    this.activeEvents.set(key, { type, message, timestamp: new Date() });
+                    this.updateBadge();
+                }
+                
+                // Browser Notification
+                if (type === 'danger' || type === 'warn') {
+                    this.sendBrowserNotification(message);
+                }
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { beginAtZero: true, max: 100 }
+            
+            clear: function(key, resolutionMessage) {
+                if (this.activeEvents.has(key)) {
+                    const event = this.activeEvents.get(key);
+                    this.activeEvents.delete(key);
+                    
+                    const msg = resolutionMessage || `${event.message} (Resolvido)`;
+                    this.addHistory('info', `✅ ${msg}`);
+                    this.updateBadge();
+                }
+            },
+            
+            addHistory: function(type, message) {
+                const timestamp = new Date();
+                this.eventHistory.unshift({ type, message, timestamp });
+                if (this.eventHistory.length > 50) {
+                    this.eventHistory.pop();
+                }
+                this.render();
+            },
+            
+            clearHistory: function() {
+                this.eventHistory = [];
+                this.render();
+            },
+            
+            render: function() {
+                const container = document.getElementById('events-log');
+                if (!container) return;
+                
+                const html = this.eventHistory.map(e => {
+                    const time = e.timestamp.toLocaleTimeString();
+                    let icon = '';
+                    
+                    if (!e.message.startsWith('✅')) {
+                        if (e.type === 'danger') icon = '❌ '; 
+                        else if (e.type === 'warn') icon = '⚠️ ';
+                        else if (e.type === 'info') icon = 'ℹ️ ';
+                    }
+                    
+                    return `
+                        <div class="event-item event-${e.type}">
+                            <span style="min-width: 65px; color: var(--text-muted);">[${time}]</span>
+                            <span>${icon}${e.message}</span>
+                        </div>
+                    `;
+                }).join('');
+                
+                container.innerHTML = html;
+            },
+            
+            updateBadge: function() {
+                const badge = document.getElementById('event-badge');
+                const count = this.activeEvents.size;
+                if (count > 0) {
+                    badge.innerText = count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            },
+            
+            sendBrowserNotification: function(msg) {
+                 if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification("VPS Dashboard", { body: msg });
                 }
             }
-        });
+        };
+
+        let socket = null;
+        let currentLogContainerId = null;
+        let metricsChart = null;
+        let statsInterval = null;
+        let containersInterval = null;
+        const MAX_POINTS = 30;
+        let metricsHistory = { cpu: [], ram: [], rx: [], tx: [] };
+
+        // --- Bot Variables ---
+        let botContainerName = null;
+        let botContainerId = null;
+        let botPreviousState = null;
+
+        // --- Helper ---
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + " B/s";
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB/s";
+            return (bytes / 1048576).toFixed(2) + " MB/s";
+        }
+
+        function alertClass(val) {
+            if (val >= THRESHOLD_DANGER) return 'val-danger';
+            if (val >= THRESHOLD_WARN) return 'val-warn';
+            return 'val-ok';
+        }
+
+        function updateAlerts(cpu, ram) {
+            const banner = document.getElementById('alert-banner');
+            const alerts = [];
+
+            // Check CPU
+            if (cpu >= THRESHOLD_DANGER) {
+                const msg = `CPU em ${cpu.toFixed(1)}%`;
+                alerts.push(msg);
+                Notifier.push('danger', `⚠️ ${msg}`, 'cpu');
+            } else {
+                Notifier.clear('cpu', 'CPU voltou ao normal');
+            }
+
+            // Check RAM
+            if (ram >= THRESHOLD_DANGER) {
+                const msg = `RAM em ${ram.toFixed(1)}%`;
+                alerts.push(msg);
+                Notifier.push('danger', `⚠️ ${msg}`, 'ram');
+            } else {
+                Notifier.clear('ram', 'RAM voltou ao normal');
+            }
+
+            // Update Banner
+            if (alerts.length > 0) {
+                banner.innerText = "⚠️ Atenção: " + alerts.join(' · ');
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+
+
+        // --- Connection Status ---
+        let isConnected = false;
+
+        function setConnectionStatus(status) {
+            const el = document.getElementById('connection-status');
+            const text = document.getElementById('conn-text');
+            
+            // Ensure element exists (it's inside dashboard-header)
+            if (!el) return;
+            
+            el.style.display = 'flex';
+            el.className = ''; // reset classes
+
+            if (status === 'connected') {
+                isConnected = true;
+                el.classList.add('status-connected');
+                text.innerText = 'Conectado';
+            } else if (status === 'reconnecting') {
+                isConnected = false;
+                el.classList.add('status-reconnecting');
+                text.innerText = 'Reconectando...';
+            } else {
+                isConnected = false;
+                el.classList.add('status-disconnected');
+                text.innerText = 'Desconectado';
+            }
+        }
+
+        // --- Auth Logic ---
+        function checkAuth() {
+            const token = localStorage.getItem('dashboard_token');
+            if (token) {
+                showDashboard();
+            } else {
+                showLogin();
+            }
+        }
+
+        function showLogin(message = null, type = 'warn') {
+            document.getElementById('login-overlay').style.display = 'flex';
+            document.getElementById('dashboard-content').style.display = 'none';
+            
+            // Clear previous messages
+            document.getElementById('login-error').style.display = 'none';
+            document.getElementById('login-message').style.display = 'none';
+            document.getElementById('token-input').value = '';
+
+            if (message) {
+                if (type === 'token-error') {
+                    const errorEl = document.getElementById('login-error');
+                    errorEl.innerText = message;
+                    errorEl.style.display = 'block';
+                } else {
+                    const msgEl = document.getElementById('login-message');
+                    msgEl.innerText = message;
+                    msgEl.className = (type === 'error') ? 'msg-error' : 'msg-warn';
+                    msgEl.style.display = 'block';
+                }
+            }
+
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+            clearInterval(statsInterval);
+            clearInterval(containersInterval);
+            metricsHistory = { cpu: [], ram: [], rx: [], tx: [] };
+        }
+
+        function showDashboard() {
+            // Check session timeout
+            if (SESSION_TIMEOUT_MS > 0) {
+                const loginTime = localStorage.getItem('login_time');
+                if (loginTime && (Date.now() - parseInt(loginTime) > SESSION_TIMEOUT_MS)) {
+                    logout("Sessão expirada. Faça login novamente.");
+                    return;
+                }
+            }
+
+            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('dashboard-content').style.display = 'flex';
+            
+            if ("Notification" in window) {
+                Notification.requestPermission();
+            }
+
+            initSocket();
+            initCharts();
+            
+            // Start polling
+            loadBotConfig();
+            loadStats();
+            loadContainers();
+            statsInterval = setInterval(loadStats, 2000);
+            containersInterval = setInterval(loadContainers, 5000);
+        }
+
+        async function login() {
+            // Clear messages
+            document.getElementById('login-error').style.display = 'none';
+            document.getElementById('login-message').style.display = 'none';
+
+            const token = document.getElementById('token-input').value;
+            try {
+                const res = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+
+                if (res.ok) {
+                    localStorage.setItem('dashboard_token', token);
+                    // Feature 11: Session Timeout - save login time
+                    localStorage.setItem('login_time', Date.now());
+                    
+                    document.getElementById('login-error').style.display = 'none';
+                    showDashboard();
+                } else {
+                    document.getElementById('login-error').style.display = 'block';
+                }
+            } catch (error) {
+                console.error("Login error:", error);
+                const msgEl = document.getElementById('login-message');
+                msgEl.innerText = "Servidor indisponível";
+                msgEl.className = 'msg-error';
+                msgEl.style.display = 'block';
+            }
+        }
+
+        function logout(message = null, type = 'warn') {
+            localStorage.removeItem('dashboard_token');
+            localStorage.removeItem('login_time');
+            showLogin(message, type);
+        }
+
+        // --- Authenticated Fetch ---
+        async function authFetch(url, options = {}) {
+            const token = localStorage.getItem('dashboard_token');
+            if (!options.headers) {
+                options.headers = {};
+            }
+            options.headers['x-dashboard-token'] = token;
+
+            try {
+                const res = await fetch(url, options);
+                if (res.status === 401) {
+                    logout("Sessão expirada. Faça login novamente.");
+                    return null;
+                }
+                return res;
+            } catch (error) {
+                console.error("Fetch error:", error);
+                return null;
+            }
+        }
+
+        // --- Socket.io ---
+        function initSocket() {
+            if (socket) return;
+            const token = localStorage.getItem('dashboard_token');
+            socket = io({
+                auth: { token },
+                reconnection: true,
+                reconnectionAttempts: 10,
+                reconnectionDelay: 2000
+            });
+
+            socket.on("connect", () => {
+                setConnectionStatus('connected');
+                // Resume intervals if they were paused
+                loadStats();
+                loadContainers();
+            });
+
+            socket.on("disconnect", () => {
+                setConnectionStatus('disconnected');
+            });
+
+            socket.io.on("reconnect_attempt", () => {
+                setConnectionStatus('reconnecting');
+            });
+
+            socket.on("connect_error", (err) => {
+                console.error("Socket connect error:", err.message);
+                if (err.message === "Unauthorized") {
+                    socket.disconnect(); // Prevent further reconnection attempts
+                    logout("Sessão expirada. Faça login novamente.");
+                } else {
+                    setConnectionStatus('disconnected');
+                }
+            });
+
+            socket.on('log', (data) => {
+                const lines = data.split('\n');
+                lines.forEach(line => {
+                    // Skip completely empty lines if desired, or keep them.
+                    // The prompt says "adicionar cada linha não-vazia"
+                    if (line.trim() !== '') {
+                        allLogLines.push(line);
+                    }
+                });
+                
+                while (allLogLines.length > 500) {
+                    allLogLines.shift();
+                }
+                
+                renderLogs();
+            });
+        }
+
+        // --- Charts & Metrics ---
+        function initCharts() {
+            if (metricsChart) return;
+            const ctx = document.getElementById('metricsChart').getContext('2d');
+            const labels = new Array(MAX_POINTS).fill("");
+
+            metricsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'CPU',
+                            data: [],
+                            borderColor: '#f87171',
+                            backgroundColor: 'rgba(248, 113, 113, 0.08)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'RAM',
+                            data: [],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'RX',
+                            data: [],
+                            borderColor: '#22c55e',
+                            backgroundColor: 'rgba(34, 197, 94, 0.08)',
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: 'TX',
+                            data: [],
+                            borderColor: '#3b82f6',
+                            borderDash: [4, 4],
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    animation: false,
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                color: 'rgba(63,63,70,0.4)'
+                            },
+                            ticks: {
+                                color: '#a1a1aa',
+                                callback: function(value) { return value + '%' }
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            beginAtZero: true,
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                            ticks: {
+                                color: '#a1a1aa',
+                                callback: function(value) { return formatBytes(value) }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#a1a1aa'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function pushHistory(cpu, ram, rx, tx) {
+            metricsHistory.cpu.push(cpu);
+            metricsHistory.ram.push(ram);
+            metricsHistory.rx.push(rx);
+            metricsHistory.tx.push(tx);
+
+            if (metricsHistory.cpu.length > MAX_POINTS) metricsHistory.cpu.shift();
+            if (metricsHistory.ram.length > MAX_POINTS) metricsHistory.ram.shift();
+            if (metricsHistory.rx.length > MAX_POINTS) metricsHistory.rx.shift();
+            if (metricsHistory.tx.length > MAX_POINTS) metricsHistory.tx.shift();
+
+            if (metricsChart) {
+                metricsChart.data.datasets[0].data = metricsHistory.cpu;
+                metricsChart.data.datasets[1].data = metricsHistory.ram;
+                metricsChart.data.datasets[2].data = metricsHistory.rx;
+                metricsChart.data.datasets[3].data = metricsHistory.tx;
+                metricsChart.update();
+            }
+        }
 
         function formatUptime(seconds) {
             const d = Math.floor(seconds / (3600*24));
@@ -213,41 +1142,180 @@
         }
 
         async function loadStats() {
+            if (!isConnected) return;
             try {
-                const res = await fetch("/stats");
+                const res = await authFetch("/stats");
+                if (!res) return;
                 const data = await res.json();
 
-                // Update Chart
-                metricsChart.data.datasets[0].data = [data.cpu, data.ram, data.disk];
-                metricsChart.update();
+                const rx = data.net_rx || 0;
+                const tx = data.net_tx || 0;
 
-                // Update Text
+                pushHistory(data.cpu, data.ram, rx, tx);
+
+                // Update Alerts
+                updateAlerts(data.cpu, data.ram);
+
                 document.getElementById('uptime').innerText = formatUptime(data.uptime);
-                document.getElementById('cpu-val').innerText = data.cpu.toFixed(1) + '%';
-                document.getElementById('ram-val').innerText = data.ram.toFixed(1) + '%';
-                document.getElementById('disk-val').innerText = data.disk.toFixed(1) + '%';
+                
+                const cpuEl = document.getElementById('cpu-val');
+                cpuEl.innerText = data.cpu.toFixed(1) + '%';
+                cpuEl.className = alertClass(data.cpu);
+
+                const ramEl = document.getElementById('ram-val');
+                ramEl.innerText = data.ram.toFixed(1) + '%';
+                ramEl.className = alertClass(data.ram);
+
+                const diskEl = document.getElementById('disk-val');
+                diskEl.innerText = data.disk.toFixed(1) + '%';
+                diskEl.className = alertClass(data.disk);
+                
+                document.getElementById('net-rx').innerText = formatBytes(rx);
+                document.getElementById('net-tx').innerText = formatBytes(tx);
             } catch (error) {
                 console.error("Error fetching stats:", error);
             }
         }
 
         // --- Docker Containers ---
-        async function loadContainers() {
+        const knownRunning = new Set();
+        let firstLoad = true;
+
+        function parsePorts(ports) {
+            if (!ports || !Array.isArray(ports)) return "—";
+            const portSet = new Set();
+            ports.forEach(p => {
+                if (p.PublicPort) {
+                    portSet.add(`${p.PublicPort}→${p.PrivatePort}`);
+                }
+            });
+            if (portSet.size === 0) return "—";
+            return Array.from(portSet).join(", ");
+        }
+
+        function filterContainers() {
+            const term = document.getElementById('container-filter').value.toLowerCase();
+            const rows = document.querySelectorAll("#containers-table tbody tr");
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name');
+                if (name && name.includes(term)) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        }
+
+        // --- Bot Logic ---
+        async function loadBotConfig() {
             try {
-                const res = await fetch("/api/containers");
+                const res = await authFetch("/api/config");
+                if (!res) return;
+                const data = await res.json();
+                botContainerName = data.botContainerName;
+                if (botContainerName) {
+                    document.getElementById('bot-card').style.display = 'flex';
+                    loadBotStatus();
+                } else {
+                    document.getElementById('bot-card').style.display = 'none';
+                }
+            } catch (e) {
+                console.error("Error loading bot config:", e);
+            }
+        }
+
+        async function loadBotStatus() {
+            if (!botContainerName) return;
+
+            try {
+                const res = await authFetch("/api/bot/status");
+                if (!res) return;
+                const data = await res.json();
+
+                const card = document.getElementById('bot-card');
+                const indicator = document.getElementById('bot-indicator');
+                const details = document.getElementById('bot-details');
+                const btnRestart = document.getElementById('bot-restart-btn');
+                const btnLogs = document.getElementById('bot-logs-btn');
+
+                if (data.found) {
+                    botContainerId = data.id;
+                    const isRunning = data.state === 'running';
+
+                    // Update Styles
+                    const color = isRunning ? '#22c55e' : '#ef4444';
+                    card.style.borderLeftColor = color;
+                    indicator.style.backgroundColor = color;
+
+                    // Update Text
+                    details.innerHTML = `<span style="font-weight: bold; color: ${color}">● ${data.state}</span>   ${data.status}`;
+
+                    // Update Actions
+                    btnRestart.onclick = () => controlContainer(data.id, 'restart');
+                    btnLogs.onclick = () => viewLogs(data.id, botContainerName);
+                    btnLogs.title = "Pressione B";
+
+                    // Notification Logic
+                    if (!isRunning) {
+                         Notifier.push('danger', "🤖 Bot WhatsApp caiu!", 'bot');
+                    } else {
+                         Notifier.clear('bot', '🤖 Bot WhatsApp voltou!');
+                    }
+                    botPreviousState = isRunning ? 'running' : data.state;
+
+                } else {
+                    details.innerText = "Container not found";
+                    indicator.style.backgroundColor = '#6c757d';
+                    card.style.borderLeftColor = '#6c757d';
+                    botPreviousState = null;
+                }
+            } catch (error) {
+                console.error("Bot status error:", error);
+            }
+        }
+
+        async function loadContainers() {
+            if (!isConnected) return;
+            // Update Bot Status concurrently
+            if (botContainerName) {
+                loadBotStatus();
+            }
+
+            try {
+                const res = await authFetch("/api/containers");
+                if (!res) return;
                 const containers = await res.json();
                 const tbody = document.querySelector("#containers-table tbody");
-                tbody.innerHTML = "";
-
+                
+                const currentRunning = new Set();
+                const filterTerm = document.getElementById('container-filter').value.toLowerCase();
+                
+                let html = "";
+                
                 containers.forEach(c => {
-                    const name = c.Names[0].replace('/', '');
+                    const name = (c.Names && c.Names[0]) ? c.Names[0].replace('/', '') : (c.Id.substring(0, 12));
                     const isRunning = c.State === 'running';
-                    const statusClass = isRunning ? 'status-running' : 'status-exited';
                     
-                    const row = `
-                        <tr>
+                    if (isRunning) {
+                        currentRunning.add(c.Id);
+                    }
+
+                    let statusClass = 'status-other';
+                    if (c.State === 'running') statusClass = 'status-running';
+                    else if (c.State === 'exited') statusClass = 'status-exited';
+
+                    const portsStr = parsePorts(c.Ports);
+                    const uptimeStr = c.Status || "";
+                    
+                    // Filter Logic
+                    const displayStyle = (name.toLowerCase().includes(filterTerm)) ? "" : "display:none;";
+
+                    html += `
+                        <tr data-name="${name.toLowerCase()}" style="${displayStyle}">
                             <td>${name}</td>
-                            <td>${c.Image}</td>
+                            <td style="font-size: 0.8rem; color: var(--text-muted);">${c.Image}</td>
+                            <td style="font-size: 0.8rem; color: var(--text-muted);">${portsStr}</td>
+                            <td style="font-size: 0.78rem; color: var(--text-muted);">${uptimeStr}</td>
                             <td class="${statusClass}">${c.State}</td>
                             <td>
                                 <button class="btn-start" onclick="controlContainer('${c.Id}', 'start')" ${isRunning ? 'disabled' : ''}>Start</button>
@@ -257,8 +1325,33 @@
                             </td>
                         </tr>
                     `;
-                    tbody.innerHTML += row;
                 });
+                
+                tbody.innerHTML = html;
+
+                // Notification Logic
+                if (!firstLoad) {
+                    knownRunning.forEach(id => {
+                        if (!currentRunning.has(id)) {
+                             const container = containers.find(c => c.Id === id);
+                             const name = container ? ((container.Names && container.Names[0]) ? container.Names[0].replace('/', '') : id.substring(0, 12)) : "Unknown";
+                             Notifier.push('danger', `❌ Container parado: ${name}`, `container-${id}`);
+                        }
+                    });
+                }
+                
+                // Clear notifications for running containers
+                currentRunning.forEach(id => {
+                     const container = containers.find(c => c.Id === id);
+                     const name = container ? ((container.Names && container.Names[0]) ? container.Names[0].replace('/', '') : id.substring(0, 12)) : "Unknown";
+                     Notifier.clear(`container-${id}`, `Container ${name} voltou a rodar`);
+                });
+                
+                // Update knownRunning
+                knownRunning.clear();
+                currentRunning.forEach(id => knownRunning.add(id));
+                firstLoad = false;
+
             } catch (error) {
                 console.error("Error fetching containers:", error);
             }
@@ -267,7 +1360,8 @@
         async function controlContainer(id, action) {
             if (!confirm(`Are you sure you want to ${action} this container?`)) return;
             try {
-                const res = await fetch(`/api/container/${id}/${action}`, { method: 'POST' });
+                const res = await authFetch(`/api/container/${id}/${action}`, { method: 'POST' });
+                if (!res) return;
                 if (res.ok) {
                     loadContainers(); // Refresh list
                 } else {
@@ -279,40 +1373,224 @@
         }
 
         // --- Logs ---
+        let allLogLines = [];
+        let filterKeyword = "";
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;")
+                      .replace(/</g, "&lt;")
+                      .replace(/>/g, "&gt;");
+        }
+
+        function renderLogs() {
+            const container = document.getElementById('logs-container');
+            if (!container) return;
+
+            // Check if user is near bottom (tolerance 40px)
+            const isAtBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 40;
+
+            const filtered = allLogLines.filter(line => {
+                if (!filterKeyword) return true;
+                return line.toLowerCase().includes(filterKeyword.toLowerCase());
+            });
+
+            const html = filtered.map(line => {
+                let className = 'log-info';
+                const lowerLine = line.toLowerCase();
+                
+                // Severity check
+                if (lowerLine.includes('error') || lowerLine.includes('err')) {
+                    className = 'log-error';
+                } else if (lowerLine.includes('warn')) {
+                    className = 'log-warn';
+                }
+
+                let content = escapeHtml(line);
+                
+                // Highlight keyword
+                if (filterKeyword) {
+                    // Escape special regex chars in keyword
+                    const safeKeyword = filterKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(`(${safeKeyword})`, 'gi');
+                    content = content.replace(regex, '<mark>$1</mark>');
+                }
+
+                return `<div class="log-line ${className}">${content}</div>`;
+            }).join('');
+
+            container.innerHTML = html;
+
+            // Auto-scroll only if was at bottom
+            if (isAtBottom) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        function copyLogs() {
+            const filtered = allLogLines.filter(line => {
+                if (!filterKeyword) return true;
+                return line.toLowerCase().includes(filterKeyword.toLowerCase());
+            });
+            
+            const text = filtered.join('\n');
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('btn-copy-logs');
+                if (btn) {
+                    const originalText = "Copiar";
+                    btn.innerText = "Copiado ✓";
+                    setTimeout(() => {
+                        btn.innerText = originalText;
+                    }, 2000);
+                }
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+
         function viewLogs(id, name) {
             document.getElementById('logs-section').style.display = 'block';
             document.getElementById('logs-title').innerText = `Logs: ${name}`;
+            
+            // Reset state
+            allLogLines = [];
+            filterKeyword = "";
+            const filterInput = document.getElementById('log-filter');
+            if (filterInput) filterInput.value = "";
+            
             const logContainer = document.getElementById('logs-container');
             logContainer.innerHTML = 'Connecting to logs...\n';
             
-            // Disconnect previous log stream if any (handled by server on new connection logic or simple re-emit)
-            // But here we might want to handle it cleanly if we could.
-            // For now, simple emit works as server handles new stream creation.
-            
-            // Clear previous logs
             currentLogContainerId = id;
-            socket.emit('logs', id);
+            if (socket) {
+                // Feature 01: backend supports stop_logs
+                socket.emit('stop_logs'); 
+                socket.emit('logs', id);
+            }
         }
 
         function closeLogs() {
             document.getElementById('logs-section').style.display = 'none';
-            // Ideally we should tell server to stop streaming, but socket.io simple impl here
-            // We could emit a 'stop_logs' event if we implemented it server-side.
+            if (socket) {
+                socket.emit('stop_logs');
+            }
+        }
+        
+        // Setup filter listener
+        const logFilterInput = document.getElementById('log-filter');
+        if (logFilterInput) {
+            logFilterInput.addEventListener('input', (e) => {
+                filterKeyword = e.target.value;
+                renderLogs();
+            });
         }
 
-        socket.on('log', (data) => {
-            const logContainer = document.getElementById('logs-container');
-            // Remove control characters for cleaner output if needed, but keeping raw is often better
-            logContainer.textContent += data; 
-            logContainer.scrollTop = logContainer.scrollHeight; // Auto-scroll
+        // --- Feature 10: Keyboard Shortcuts ---
+        document.addEventListener("keydown", handleShortcut);
+
+        function handleShortcut(e) {
+            // Ignorar se estiver em input/textarea/select
+            if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) {
+                // Exceção: Escape para sair do input
+                if (e.key === "Escape") {
+                    document.activeElement.blur();
+                    // Se for o filtro de containers, limpar
+                    if (document.activeElement.id === 'container-filter') {
+                        document.getElementById('container-filter').value = '';
+                        filterContainers();
+                    }
+                }
+                return;
+            }
+
+            // Ignorar se dashboard não estiver visível (login screen)
+            if (document.getElementById('dashboard-content').style.display === 'none') return;
+
+            // Ignorar atalhos com modificadores (Ctrl, Alt, Meta) para não conflitar com navegador
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+            const key = e.key.toLowerCase();
+            const isShift = e.shiftKey;
+
+            // '?' key (shift + / on some layouts, or just ?)
+            if (e.key === '?' || (e.key === '/' && isShift)) {
+                e.preventDefault();
+                toggleShortcuts();
+                return;
+            }
+
+            if (e.key === "Escape") {
+                // Prioridade: Fechar modal -> Fechar logs -> Limpar filtro
+                const modal = document.getElementById('shortcuts-modal');
+                if (modal.classList.contains('open')) {
+                    toggleShortcuts();
+                    return;
+                }
+                
+                const logsSection = document.getElementById('logs-section');
+                if (logsSection.style.display !== 'none') {
+                    closeLogs();
+                    return;
+                }
+                
+                const filter = document.getElementById('container-filter');
+                if (filter.value) {
+                    filter.value = '';
+                    filterContainers();
+                }
+                return;
+            }
+
+            // Actions
+            switch(key) {
+                case 'r':
+                    flashElement(document.getElementById('containers-table'));
+                    loadContainers();
+                    break;
+                case 's':
+                    flashElement(document.querySelector('.stats'));
+                    loadStats();
+                    break;
+                case 'l':
+                    closeLogs();
+                    break;
+                case '/':
+                    e.preventDefault();
+                    document.getElementById('container-filter').focus();
+                    break;
+                case 'b':
+                    if (botContainerName && botContainerId) {
+                        viewLogs(botContainerId, botContainerName);
+                    }
+                    break;
+            }
+        }
+
+        function toggleShortcuts() {
+            const modal = document.getElementById('shortcuts-modal');
+            modal.classList.toggle('open');
+        }
+        
+        // Fechar modal ao clicar fora
+        document.getElementById('shortcuts-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'shortcuts-modal') toggleShortcuts();
         });
 
+        function flashElement(el) {
+            if (!el) return;
+            el.classList.add('flash-active');
+            setTimeout(() => el.classList.remove('flash-active'), 300);
+        }
+
         // --- Init ---
-        setInterval(loadStats, 2000);
-        loadStats();
-        
-        setInterval(loadContainers, 5000); // Refresh containers every 5s
-        loadContainers();
+        // Allow Enter key to submit login
+        document.getElementById('token-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+
+        checkAuth();
 
     </script>
 
