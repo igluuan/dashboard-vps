@@ -503,6 +503,147 @@
         .flash-active {
             animation: flash-update 0.3s ease-in-out;
         }
+        /* Feature 14: Mobile UX Improvements */
+        .mobile-containers {
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .container-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(128,128,128,0.2);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px var(--card-shadow);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .card-details {
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+        
+        .card-details div {
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .card-actions button {
+            width: 100%;
+            margin: 0;
+            min-height: 44px;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 12px;
+                overflow-x: hidden;
+            }
+            
+            .table-responsive {
+                display: none;
+            }
+            
+            .mobile-containers {
+                display: flex;
+            }
+
+            input {
+                font-size: 16px !important;
+            }
+
+            .btn {
+                min-height: 44px;
+                padding: 10px 16px;
+                font-size: 0.875rem;
+            }
+            
+            .chart-wrap {
+                height: 140px;
+            }
+
+            /* Logs improvements */
+            #logs-container {
+                font-size: 0.875rem;
+                line-height: 1.7;
+                height: 50vh;
+                max-height: unset;
+            }
+            
+            #log-filter {
+                width: 100%;
+                font-size: 1rem;
+            }
+            
+            .logs-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .logs-actions button {
+                width: 100%;
+                padding: 12px;
+                margin-bottom: 8px;
+                margin-right: 0 !important;
+            }
+            
+            #events-log {
+                max-height: 150px;
+                font-size: 0.8rem;
+                line-height: 1.6;
+            }
+            
+            /* Bot Card Mobile */
+            #bot-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .bot-actions {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .bot-actions button {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .dashboard-header div {
+                width: 100%;
+                justify-content: space-between;
+                display: flex;
+            }
+            .btn-logout {
+                padding: 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -600,6 +741,7 @@
                     </tbody>
                 </table>
             </div>
+            <div id="mobile-containers" class="mobile-containers"></div>
         </div>
 
         <div class="container" id="events-section">
@@ -613,9 +755,9 @@
         <div class="container" id="logs-section" style="display:none;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <h2 id="logs-title" style="margin: 0;">Logs</h2>
-                <div>
-                     <button onclick="copyLogs()" id="btn-copy-logs" style="background-color: #3b82f6; margin-right: 5px;">Copiar</button>
-                     <button onclick="closeLogs()" style="background-color: #6c757d;" title="Pressione L ou Esc">Fechar</button>
+                <div class="logs-actions">
+                     <button onclick="copyLogs()" id="btn-copy-logs" class="btn" style="background-color: #3b82f6; margin-right: 5px;">Copiar</button>
+                     <button onclick="closeLogs()" class="btn" style="background-color: #6c757d;" title="Pressione L ou Esc">Fechar</button>
                 </div>
             </div>
             <input type="text" id="log-filter" placeholder="Filtrar logs..." style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; background: #27272a; color: white; border-color: #3f3f46;">
@@ -1105,6 +1247,7 @@
                     },
                     plugins: {
                         legend: {
+                            display: window.innerWidth > 640,
                             labels: {
                                 color: '#a1a1aa'
                             }
@@ -1204,6 +1347,17 @@
                     row.style.display = "none";
                 }
             });
+
+            // Feature 14: Filter Mobile Cards
+            const cards = document.querySelectorAll(".container-card");
+            cards.forEach(card => {
+                const name = card.getAttribute('data-name');
+                if (name && name.includes(term)) {
+                    card.style.display = "block";
+                } else {
+                    card.style.display = "none";
+                }
+            });
         }
 
         // --- Bot Logic ---
@@ -1274,6 +1428,51 @@
             }
         }
 
+        function renderContainerCards(containers) {
+            const mobileContainer = document.getElementById('mobile-containers');
+            if (!mobileContainer) return;
+            
+            const filterTerm = document.getElementById('container-filter').value.toLowerCase();
+            let html = "";
+            
+            containers.forEach(c => {
+                const name = (c.Names && c.Names[0]) ? c.Names[0].replace('/', '') : (c.Id.substring(0, 12));
+                const isRunning = c.State === 'running';
+                
+                // Filter Logic handled by filterContainers, but we apply initial filter here too
+                const displayStyle = (name.toLowerCase().includes(filterTerm)) ? "" : "display:none;";
+
+                let statusColor = '#6c757d'; // other
+                if (c.State === 'running') statusColor = '#22c55e';
+                else if (c.State === 'exited') statusColor = '#ef4444';
+
+                const portsStr = parsePorts(c.Ports);
+                const uptimeStr = c.Status || "";
+                
+                html += `
+                    <div class="container-card" data-name="${name.toLowerCase()}" style="${displayStyle}">
+                        <div class="card-header">
+                            <span class="card-title">${name}</span>
+                            <span class="status-dot" style="background-color: ${statusColor}; width: 12px; height: 12px; border-radius: 50%; display: inline-block;"></span>
+                        </div>
+                        <div class="card-details">
+                            <div><strong>Image:</strong> ${c.Image}</div>
+                            <div><strong>Uptime:</strong> ${uptimeStr}</div>
+                            <div><strong>Ports:</strong> ${portsStr}</div>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-start" onclick="controlContainer('${c.Id}', 'start')" ${isRunning ? 'disabled' : ''}>Start</button>
+                            <button class="btn-stop" onclick="controlContainer('${c.Id}', 'stop')" ${!isRunning ? 'disabled' : ''}>Stop</button>
+                            <button class="btn-restart" onclick="controlContainer('${c.Id}', 'restart')">Restart</button>
+                            <button class="btn-logs" onclick="viewLogs('${c.Id}', '${name}')">Logs</button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            mobileContainer.innerHTML = html;
+        }
+
         async function loadContainers() {
             if (!isConnected) return;
             // Update Bot Status concurrently
@@ -1328,6 +1527,9 @@
                 });
                 
                 tbody.innerHTML = html;
+
+                // Feature 14: Mobile Cards
+                renderContainerCards(containers);
 
                 // Notification Logic
                 if (!firstLoad) {
