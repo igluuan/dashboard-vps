@@ -5,6 +5,7 @@ const path = require("path");
 const http = require("http");
 const { Server } = require("socket.io");
 const Docker = require("dockerode");
+const { exec } = require("child_process");
 
 const app = express();
 const server = http.createServer(app);
@@ -116,6 +117,82 @@ app.get("/api/containers", async (req, res) => {
     console.error("Docker error:", error);
     res.status(500).json({ error: "Docker Error" });
   }
+});
+
+// Protected Services
+const PROTECTED_SERVICES = ["ssh.service", "sshd.service", "systemd-journald.service", "systemd-udevd.service", "dashboard-vps.service"];
+
+// List Services
+app.get("/api/services", (req, res) => {
+    exec("systemctl list-units --type=service --no-pager --output=json", (error, stdout, stderr) => {
+        if (error) {
+            console.error(`exec error: ${error}`);
+            return res.status(500).json({ error: "Failed to list services" });
+        }
+        try {
+            const units = JSON.parse(stdout);
+            const services = units
+                .filter(u => u.load === "loaded")
+                .map(u => ({
+                    name: u.unit,
+                    description: u.description,
+                    load: u.load,
+                    active: u.active,
+                    sub: u.sub
+                }));
+            res.json(services);
+        } catch (e) {
+            console.error("Parse error:", e);
+            res.status(500).json({ error: "Failed to parse systemd output" });
+        }
+    });
+});
+
+// Control Service
+app.post("/api/service/:name/:action", (req, res) => {
+    const { name, action } = req.params;
+    
+    // Sanitize name
+    if (!/^[a-zA-Z0-9._-]+$/.test(name)) {
+        return res.status(400).send("Nome de serviço inválido");
+    }
+
+    // Validate action
+    if (!["start", "stop", "restart"].includes(action)) {
+        return res.status(400).send("Ação inválida");
+    }
+
+    // Check protected services
+    if ((action === "stop" || action === "restart") && PROTECTED_SERVICES.includes(name)) {
+        return res.status(403).send("Este serviço é protegido e não pode ser parado/reiniciado via dashboard");
+    }
+
+    exec(`systemctl ${action} ${name}`, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Service control error: ${error}`);
+            return res.status(500).send(stderr || error.message);
+        }
+        res.send("ok");
+    });
+});
+
+// Service Logs
+app.get("/api/service/:name/logs", (req, res) => {
+    const { name } = req.params;
+    const lines = req.query.lines || 100;
+
+    // Sanitize name
+    if (!/^[a-zA-Z0-9._-]+$/.test(name)) {
+        return res.status(400).send("Nome de serviço inválido");
+    }
+
+    exec(`journalctl -u ${name} -n ${lines} --no-pager --output=short`, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Journalctl error: ${error}`);
+            return res.status(500).send(stderr || error.message);
+        }
+        res.send(stdout);
+    });
 });
 
 // Start Container
