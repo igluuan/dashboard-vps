@@ -14,16 +14,38 @@
             --card-shadow: rgba(0,0,0,0.1);
             --header-color: #333;
             --text-muted: #6c757d;
+            --terminal-bg: #1e1e1e;
+            --terminal-text: #0f0;
         }
 
+        /* Dark Mode Class */
+        body.dark-mode {
+            --bg-color: #18181b;
+            --text-color: #e4e4e7;
+            --card-bg: #27272a;
+            --card-shadow: rgba(0,0,0,0.5);
+            --header-color: #f4f4f5;
+            --text-muted: #a1a1aa;
+        }
+
+        /* Auto Dark Mode (System Preference) - overridden if .light-mode class is present */
         @media (prefers-color-scheme: dark) {
             :root {
-                --bg-color: #18181b; /* zinc-900 */
-                --text-color: #e4e4e7; /* zinc-200 */
-                --card-bg: #27272a; /* zinc-800 */
+                --bg-color: #18181b;
+                --text-color: #e4e4e7;
+                --card-bg: #27272a;
                 --card-shadow: rgba(0,0,0,0.5);
-                --header-color: #f4f4f5; /* zinc-100 */
+                --header-color: #f4f4f5;
                 --text-muted: #a1a1aa;
+            }
+            /* If user explicitly chose light mode */
+            body.light-mode {
+                --bg-color: #f4f4f9;
+                --text-color: #333;
+                --card-bg: white;
+                --card-shadow: rgba(0,0,0,0.1);
+                --header-color: #333;
+                --text-muted: #6c757d;
             }
         }
 
@@ -694,6 +716,40 @@
                 grid-template-columns: 1fr 1fr;
             }
         }
+        /* Terminal Section */
+        #terminal-output {
+            background-color: var(--terminal-bg);
+            color: var(--terminal-text);
+            font-family: 'Courier New', Courier, monospace;
+            padding: 10px;
+            height: 300px;
+            overflow-y: scroll;
+            border-radius: 5px 5px 0 0;
+            white-space: pre-wrap;
+            font-size: 14px;
+            border: 1px solid #333;
+        }
+        
+        #terminal-input {
+            width: 100%;
+            padding: 10px;
+            background-color: #000;
+            color: #fff;
+            border: 1px solid #333;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        /* Telegram Card specific (reusing bot styles) */
+        .telegram-color {
+            border-left-color: #24A1DE !important; 
+        }
+        .telegram-indicator {
+            background-color: #24A1DE !important;
+        }
     </style>
 </head>
 <body>
@@ -713,8 +769,14 @@
     <div id="dashboard-content" style="display: none; width: 100%; flex-direction: column; align-items: center;">
         
         <div class="dashboard-header">
-            <h2>VPS Dashboard <span id="event-badge" class="badge">0</span></h2>
-            <div style="display: flex; align-items: center;">
+            <div style="display: flex; flex-direction: column;">
+                <h2 style="margin-bottom: 5px;">VPS Dashboard <span id="event-badge" class="badge">0</span></h2>
+                <span id="greeting-text" style="color: var(--text-muted); font-size: 0.9rem;">Bem vindo</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button onclick="toggleTheme()" class="btn" style="background-color: transparent; border: 1px solid var(--text-muted); color: var(--text-color); min-height: 36px; padding: 0 10px;" title="Alternar Tema">
+                    <span id="theme-icon">🌓</span>
+                </button>
                 <div id="connection-status" class="status-disconnected" style="display: none;">
                     <div class="status-dot"></div> <span id="conn-text">Desconectado</span>
                 </div>
@@ -734,6 +796,19 @@
             <div class="bot-actions">
                 <button class="btn-restart" id="bot-restart-btn">Restart</button>
                 <button class="btn-logs" id="bot-logs-btn">Logs</button>
+            </div>
+        </div>
+
+        <!-- Telegram Bot Card -->
+        <div id="telegram-card" class="container telegram-color" style="display: none;">
+            <div class="bot-info">
+                <span id="telegram-indicator" class="bot-status-indicator telegram-indicator"></span>
+                <span>✈️ Telegram Bot</span>
+                <span id="telegram-details" class="bot-details">loading...</span>
+            </div>
+            <div class="bot-actions">
+                <button class="btn-restart" id="telegram-restart-btn">Restart</button>
+                <button class="btn-logs" id="telegram-logs-btn">Logs</button>
             </div>
         </div>
 
@@ -803,6 +878,12 @@
             </div>
         </div>
 
+        <div class="container" id="terminal-section">
+            <h3>Terminal Web</h3>
+            <div id="terminal-output">Bem-vindo ao Terminal Web. Digite um comando abaixo.</div>
+            <input type="text" id="terminal-input" placeholder="root@vps:~$ (Enter para enviar)" autocomplete="off">
+        </div>
+
         <div class="container" id="events-section">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                  <h3>Histórico de Eventos</h3>
@@ -815,6 +896,14 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <h2 id="logs-title" style="margin: 0;">Logs</h2>
                 <div class="logs-actions">
+                     <select id="log-time-filter" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-right: 5px; background: var(--card-bg); color: var(--text-color);" onchange="reloadLogsWithTime()">
+                        <option value="">Desde o início (tail)</option>
+                        <option value="10">Últimos 10 min</option>
+                        <option value="30">Últimos 30 min</option>
+                        <option value="60">Última 1 hora</option>
+                        <option value="360">Últimas 6 horas</option>
+                        <option value="1440">Últimas 24 horas</option>
+                     </select>
                      <button onclick="copyLogs()" id="btn-copy-logs" class="btn" style="background-color: #3b82f6; margin-right: 5px;">Copiar</button>
                      <button onclick="closeLogs()" class="btn" style="background-color: #6c757d;" title="Pressione L ou Esc">Fechar</button>
                 </div>
@@ -955,6 +1044,13 @@
         let botContainerName = null;
         let botContainerId = null;
         let botPreviousState = null;
+        
+        let telegramBotContainerName = null;
+        let telegramBotContainerId = null;
+        let telegramBotPreviousState = null;
+
+        // Log State
+        let currentLogServiceName = null; // For systemd logs re-fetching
 
         // --- Helper ---
         function formatBytes(bytes) {
@@ -1461,16 +1557,44 @@
             }
         }
 
+        function reloadLogsWithTime() {
+            const timeFilter = document.getElementById('log-time-filter').value;
+            
+            // Clear current logs
+            allLogLines = [];
+            document.getElementById('logs-container').innerHTML = 'Reloading logs...\n';
+
+            if (currentLogContainerId) {
+                // Docker
+                if (socket) {
+                    socket.emit('stop_logs');
+                    const payload = { id: currentLogContainerId };
+                    if (timeFilter) payload.since = timeFilter;
+                    socket.emit('logs', payload);
+                }
+            } else if (currentLogServiceName) {
+                // Systemd
+                viewServiceLogs(currentLogServiceName);
+            }
+        }
+
         async function viewServiceLogs(name) {
             document.getElementById('logs-section').style.display = 'block';
             document.getElementById('logs-title').innerText = `Logs: ${name}`;
             
-            // Reset state
-            allLogLines = [];
-            filterKeyword = "";
-            const filterInput = document.getElementById('log-filter');
-            if (filterInput) filterInput.value = "";
+            // Reset state if it's a new service
+            if (currentLogServiceName !== name) {
+                allLogLines = [];
+                const filterInput = document.getElementById('log-filter');
+                if (filterInput) filterInput.value = "";
+                // Reset time filter to default? Maybe keep it? Let's keep it.
+            }
+            currentLogServiceName = name;
+            currentLogContainerId = null; // Clear docker context
             
+            // Get Time Filter
+            const timeFilter = document.getElementById('log-time-filter').value;
+
             const logContainer = document.getElementById('logs-container');
             logContainer.innerHTML = 'Loading logs...\n';
             
@@ -1478,10 +1602,14 @@
             if (socket) {
                 socket.emit('stop_logs');
             }
-            currentLogContainerId = null;
 
             try {
-                const res = await authFetch(`/api/service/${name}/logs?lines=100`);
+                let url = `/api/service/${name}/logs?lines=100`;
+                if (timeFilter) {
+                    url += `&since=${timeFilter}m`; // Backend expects e.g. "10m"
+                }
+                
+                const res = await authFetch(url);
                 if (!res) return;
                 const text = await res.text();
                 
@@ -1494,16 +1622,7 @@
         }
 
         function filterServices() {
-            const term = document.getElementById('service-filter').value.toLowerCase();
-            const cards = document.querySelectorAll(".service-card");
-            cards.forEach(card => {
-                const name = card.getAttribute('data-name');
-                if (name && name.includes(term)) {
-                    card.style.display = "block";
-                } else {
-                    card.style.display = "none";
-                }
-            });
+            renderServices();
         }
 
         // --- Docker Containers ---
@@ -1552,12 +1671,21 @@
                 const res = await authFetch("/api/config");
                 if (!res) return;
                 const data = await res.json();
+                
                 botContainerName = data.botContainerName;
                 if (botContainerName) {
                     document.getElementById('bot-card').style.display = 'flex';
                     loadBotStatus();
                 } else {
                     document.getElementById('bot-card').style.display = 'none';
+                }
+
+                telegramBotContainerName = data.telegramBotContainerName;
+                if (telegramBotContainerName) {
+                    document.getElementById('telegram-card').style.display = 'flex';
+                    loadTelegramBotStatus();
+                } else {
+                    document.getElementById('telegram-card').style.display = 'none';
                 }
             } catch (e) {
                 console.error("Error loading bot config:", e);
@@ -1614,6 +1742,75 @@
             }
         }
 
+        async function loadTelegramBotStatus() {
+            if (!telegramBotContainerName) return;
+
+            try {
+                const res = await authFetch("/api/bot/telegram/status");
+                if (!res) return;
+                const data = await res.json();
+
+                const card = document.getElementById('telegram-card');
+                const indicator = document.getElementById('telegram-indicator');
+                const details = document.getElementById('telegram-details');
+                const btnRestart = document.getElementById('telegram-restart-btn');
+                const btnLogs = document.getElementById('telegram-logs-btn');
+
+                if (data.found) {
+                    telegramBotContainerId = data.id;
+                    const isRunning = data.state === 'running';
+
+                    // Update Styles
+                    const color = isRunning ? '#22c55e' : '#ef4444';
+                    // Keep Telegram blue border if running, or red if down? 
+                    // Let's stick to status color for border left to be consistent with WhatsApp bot logic
+                    // But maybe user wants blue? The CSS has .telegram-color { border-left-color: #24A1DE !important; }
+                    // If I set style.borderLeftColor via JS, it overrides CSS !important? No.
+                    // !important in CSS wins over inline style unless inline has !important.
+                    // So line 747: .telegram-color { border-left-color: #24A1DE !important; } wins.
+                    // But we want to show red if it is down.
+                    // So we should toggle the class .telegram-color.
+                    
+                    if (isRunning) {
+                        card.classList.add('telegram-color');
+                        indicator.classList.add('telegram-indicator'); // blue
+                        card.style.borderLeftColor = ''; // let css take over
+                        indicator.style.backgroundColor = ''; 
+                    } else {
+                        card.classList.remove('telegram-color');
+                        indicator.classList.remove('telegram-indicator');
+                        card.style.borderLeftColor = '#ef4444';
+                        indicator.style.backgroundColor = '#ef4444';
+                    }
+
+                    // Update Text
+                    const statusColor = isRunning ? '#22c55e' : '#ef4444';
+                    details.innerHTML = `<span style="font-weight: bold; color: ${statusColor}">● ${data.state}</span>   ${data.status}`;
+
+                    // Update Actions
+                    btnRestart.onclick = () => controlContainer(data.id, 'restart');
+                    btnLogs.onclick = () => viewLogs(data.id, telegramBotContainerName);
+
+                    // Notification Logic
+                    if (!isRunning) {
+                         Notifier.push('danger', "✈️ Bot Telegram caiu!", 'telegram-bot');
+                    } else {
+                         Notifier.clear('telegram-bot', '✈️ Bot Telegram voltou!');
+                    }
+                    telegramBotPreviousState = isRunning ? 'running' : data.state;
+
+                } else {
+                    details.innerText = "Container not found";
+                    indicator.style.backgroundColor = '#6c757d';
+                    card.classList.remove('telegram-color');
+                    card.style.borderLeftColor = '#6c757d';
+                    telegramBotPreviousState = null;
+                }
+            } catch (error) {
+                console.error("Telegram Bot status error:", error);
+            }
+        }
+
         function renderContainerCards(containers) {
             const mobileContainer = document.getElementById('mobile-containers');
             if (!mobileContainer) return;
@@ -1662,9 +1859,8 @@
         async function loadContainers() {
             if (!isConnected) return;
             // Update Bot Status concurrently
-            if (botContainerName) {
-                loadBotStatus();
-            }
+            if (botContainerName) loadBotStatus();
+            if (telegramBotContainerName) loadTelegramBotStatus();
 
             try {
                 const res = await authFetch("/api/containers");
@@ -1970,6 +2166,104 @@
             setTimeout(() => el.classList.remove('flash-active'), 300);
         }
 
+        // --- Theme Logic ---
+        function initTheme() {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('theme-icon').innerText = '☀️';
+            } else if (saved === 'light') {
+                document.body.classList.add('light-mode');
+                document.getElementById('theme-icon').innerText = '🌑';
+            } else {
+                // Auto (system preference)
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.getElementById('theme-icon').innerText = '☀️';
+                } else {
+                    document.getElementById('theme-icon').innerText = '🌑';
+                }
+            }
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const isSystemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const isDark = body.classList.contains('dark-mode') || (!body.classList.contains('light-mode') && isSystemDark);
+
+            if (isDark) {
+                // Switch to Light
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                localStorage.setItem('theme', 'light');
+                document.getElementById('theme-icon').innerText = '🌑';
+            } else {
+                // Switch to Dark
+                body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+                document.getElementById('theme-icon').innerText = '☀️';
+            }
+        }
+
+        // --- Greeting Logic ---
+        function updateGreeting() {
+            const hour = new Date().getHours();
+            let greeting = "Bem vindo";
+            
+            if (hour >= 5 && hour < 12) greeting = "Bom dia";
+            else if (hour >= 12 && hour < 18) greeting = "Boa tarde";
+            else if (hour >= 18 && hour < 24) greeting = "Boa noite";
+            else greeting = "Boa madrugada";
+
+            const el = document.getElementById('greeting-text');
+            if (el) el.innerText = `${greeting}, Luan!`;
+        }
+        
+        // Update greeting every minute just in case
+        setInterval(updateGreeting, 60000);
+
+        // --- Terminal Logic ---
+        const termInput = document.getElementById('terminal-input');
+        if (termInput) {
+            termInput.addEventListener('keypress', async (e) => {
+                if (e.key === 'Enter') {
+                    const command = termInput.value;
+                    if (!command) return;
+                    
+                    termInput.value = '';
+                    const output = document.getElementById('terminal-output');
+                    output.innerText += `\nroot@vps:~$ ${command}`;
+                    
+                    if (command === 'clear') {
+                        output.innerText = 'Bem-vindo ao Terminal Web. Digite um comando abaixo.';
+                        return;
+                    }
+
+                    try {
+                        const res = await authFetch('/api/terminal/exec', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ command })
+                        });
+                        
+                        if (!res) return;
+                        const data = await res.json();
+                        
+                        if (data.error) {
+                            output.innerText += `\nError: ${data.error}`;
+                        } else {
+                            if (data.stdout) output.innerText += `\n${data.stdout}`;
+                            if (data.stderr) output.innerText += `\n${data.stderr}`;
+                        }
+                    } catch (err) {
+                        output.innerText += `\nRequest Error: ${err.message}`;
+                    }
+                    
+                    output.scrollTop = output.scrollHeight;
+                }
+            });
+        }
+
         // --- Init ---
         // Allow Enter key to submit login
         document.getElementById('token-input').addEventListener('keypress', function (e) {
@@ -1979,6 +2273,8 @@
         });
 
         checkAuth();
+        initTheme();
+        updateGreeting();
 
     </script>
 

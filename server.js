@@ -72,24 +72,37 @@ app.get("/stats", async (req, res) => {
 
 // Bot Config
 app.get("/api/config", (req, res) => {
-    res.json({ botContainerName: process.env.BOT_CONTAINER_NAME || null });
+    res.json({ 
+        botContainerName: process.env.BOT_CONTAINER_NAME || null,
+        telegramBotContainerName: process.env.TELEGRAM_BOT_CONTAINER_NAME || null
+    });
 });
 
-// Bot Status
+// WhatsApp Bot Status
 app.get("/api/bot/status", async (req, res) => {
     const botName = process.env.BOT_CONTAINER_NAME;
     if (!botName) {
         return res.json({ found: false });
     }
+    await checkContainerStatus(botName, res);
+});
 
+// Telegram Bot Status
+app.get("/api/bot/telegram/status", async (req, res) => {
+    const botName = process.env.TELEGRAM_BOT_CONTAINER_NAME;
+    if (!botName) {
+        return res.json({ found: false });
+    }
+    await checkContainerStatus(botName, res);
+});
+
+async function checkContainerStatus(botName, res) {
     try {
         const containers = await docker.listContainers({
             all: true,
             filters: { name: [botName] }
         });
         
-        // Find the specific container by name (Docker returns all matches, e.g. "whatsapp-bot-1")
-        // We look for one that includes the name
         const botContainer = containers.find(c => c.Names.some(n => n.includes(botName)));
 
         if (botContainer) {
@@ -106,7 +119,7 @@ app.get("/api/bot/status", async (req, res) => {
         console.error("Bot status error:", error);
         res.status(500).json({ error: "Docker Error" });
     }
-});
+}
 
 // Docker Containers
 app.get("/api/containers", async (req, res) => {
@@ -119,8 +132,29 @@ app.get("/api/containers", async (req, res) => {
   }
 });
 
-// Protected Services
-const PROTECTED_SERVICES = ["ssh.service", "sshd.service", "systemd-journald.service", "systemd-udevd.service", "dashboard-vps.service"];
+// Protected Services (cannot be stopped/restarted via dashboard)
+const PROTECTED_SERVICES = ["ssh.service", "sshd.service", "systemd-journald.service", "systemd-udevd.service", "dashboard-vps.service", "docker.service"];
+
+// Ignored Services (hidden from list to reduce noise)
+const IGNORED_PATTERNS = [
+    /^systemd-/,
+    /^sys-/,
+    /^dev-/,
+    /^proc-/,
+    /^run-/,
+    /^user@/,     // user sessions
+    /^getty@/,    // terminals
+    /^serial-getty@/,
+    /^modprobe@/,
+    /^plymouth-/, // boot splash
+    /^snap-/,     // snap mounts (optional, but usually noise)
+    /^keyboard-/,
+    /^alsa-/,     // audio
+    /^dbus/,      // system bus
+    /^kmod-/,
+    /^polkit/,
+    /^wpa_supplicant/
+];
 
 // List Services
 app.get("/api/services", (req, res) => {
@@ -133,6 +167,11 @@ app.get("/api/services", (req, res) => {
             const units = JSON.parse(stdout);
             const services = units
                 .filter(u => u.load === "loaded")
+                .filter(u => {
+                    // Filter out ignored patterns
+                    if (IGNORED_PATTERNS.some(p => p.test(u.unit))) return false;
+                    return true;
+                })
                 .map(u => ({
                     name: u.unit,
                     description: u.description,
@@ -176,17 +215,51 @@ app.post("/api/service/:name/:action", (req, res) => {
     });
 });
 
+// Terminal Exec
+app.post("/api/terminal/exec", (req, res) => {
+    const { command } = req.body;
+    
+    if (!command || typeof command !== 'string') {
+        return res.status(400).send("Comando inválido");
+    }
+
+    // Basic security check (optional, but good practice even for admin)
+    // For now, we allow everything since it's an admin dashboard, but maybe block 'rm -rf /' or interactive commands
+    if (command.trim().startsWith("rm -rf /")) {
+        return res.status(403).send("Comando perigoso bloqueado");
+    }
+
+    const child = exec(command, { cwd: '/root' }, (error, stdout, stderr) => {
+        // We don't return 500 on command error because the command might just fail (e.g. ls non-existent)
+        // We return the output regardless
+        res.json({
+            stdout: stdout || "",
+            stderr: stderr || "",
+            error: error ? error.message : null
+        });
+    });
+});
+
 // Service Logs
 app.get("/api/service/:name/logs", (req, res) => {
     const { name } = req.params;
     const lines = req.query.lines || 100;
+    const since = req.query.since; // e.g. "10m", "1h"
 
     // Sanitize name
     if (!/^[a-zA-Z0-9._-]+$/.test(name)) {
         return res.status(400).send("Nome de serviço inválido");
     }
 
-    exec(`journalctl -u ${name} -n ${lines} --no-pager --output=short`, (error, stdout, stderr) => {
+    let cmd = `journalctl -u ${name} -n ${lines} --no-pager --output=short`;
+    if (since) {
+        // Sanitize since (simple alphanumeric check)
+        if (/^[a-zA-Z0-9\s]+$/.test(since)) {
+            cmd += ` --since "${since} ago"`;
+        }
+    }
+
+    exec(cmd, (error, stdout, stderr) => {
         if (error) {
             console.error(`Journalctl error: ${error}`);
             return res.status(500).send(stderr || error.message);
@@ -244,7 +317,10 @@ io.on("connection", (socket) => {
 
   let currentStream = null;
 
-  socket.on("logs", async (containerId) => {
+  socket.on("logs", async (data) => {
+    const containerId = typeof data === 'string' ? data : data.id;
+    const since = (typeof data === 'object' && data.since) ? data.since : null; // timestamp in seconds
+
     // Stop any previous stream for this socket
     if (currentStream) {
         currentStream.destroy();
@@ -253,12 +329,22 @@ io.on("connection", (socket) => {
 
     try {
       const container = docker.getContainer(containerId);
-      const stream = await container.logs({
+      const options = {
         follow: true,
         stdout: true,
         stderr: true,
-        tail: 50 // Get last 50 lines initially
-      });
+        tail: 50
+      };
+
+      if (since) {
+        options.since = Math.floor(Date.now() / 1000) - (parseInt(since) * 60); // since is in minutes
+        // If since is provided, we might want to fetch more lines or ignore tail?
+        // Docker API uses 'since' as unix timestamp.
+        // If 'since' is used, 'tail' might conflict if we want *all* logs since then.
+        // Let's keep tail default unless specified otherwise.
+      }
+
+      const stream = await container.logs(options);
 
       currentStream = stream;
 
