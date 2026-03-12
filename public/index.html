@@ -132,7 +132,20 @@
             padding: 10px;
             text-align: left;
             border-bottom: 1px solid rgba(128,128,128,0.2);
+            vertical-align: middle;
         }
+        
+        /* Actions Column: Force horizontal layout */
+        #containers-table td:last-child {
+            white-space: nowrap;
+            width: 1%; /* Collapse to content width */
+        }
+        
+        #containers-table td:last-child button {
+            margin-right: 4px;
+            margin-bottom: 0; /* Prevent vertical stacking spacing if wrapped */
+        }
+
         th {
             background-color: rgba(0,0,0,0.05);
         }
@@ -272,16 +285,17 @@
         }
 
         /* Mobile Responsive */
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             body {
-                padding: 12px;
+                padding: 10px;
+                padding-bottom: 80px; /* Space for footer/keyboard */
             }
 
             .dashboard-header {
-                flex-wrap: wrap;
-                justify-content: center;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 15px;
                 text-align: center;
-                gap: 10px;
             }
             
             .dashboard-header h2 {
@@ -291,55 +305,83 @@
             }
             
             .dashboard-header .btn-logout {
-                font-size: 0.9rem;
-                padding: 8px 16px;
                 width: 100%;
+                padding: 12px;
             }
 
-            /* Table Adjustments */
-            /* Hide Image and Ports column */
-            th:nth-child(2), td:nth-child(2),
-            th:nth-child(3), td:nth-child(3) {
+            /* Hide Table, Show Cards */
+            .table-responsive {
                 display: none;
             }
             
-            /* Actions column flex wrap */
-            td:last-child {
+            .mobile-containers {
                 display: flex;
-                flex-wrap: wrap;
-                gap: 4px;
-                min-width: 140px; 
             }
-            
-            td:last-child button {
-                flex: 1 1 45%; 
-                margin-right: 0;
-                justify-content: center;
+
+            /* Inputs */
+            input, select, button {
+                font-size: 16px !important; /* Prevent iOS zoom */
+                min-height: 48px; /* Better touch target */
+            }
+
+            /* Charts */
+            .chart-wrap {
+                height: 180px;
             }
 
             /* Logs */
             #logs-container {
-                height: auto;
-                max-height: 60vh;
+                height: 50vh;
+                font-size: 0.85rem;
             }
             
-            #logs-section button {
+            .logs-actions {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .logs-actions button, .logs-actions select {
                 width: 100%;
+                margin: 0;
             }
 
-            /* Chart */
-            .chart-wrap {
-                height: 150px;
+            /* Bot Card */
+            #bot-card, #telegram-card {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .bot-actions {
+                width: 100%;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                margin-top: 10px;
+            }
+
+            /* Nav Tabs - Horizontal Scroll */
+            .nav-tabs {
+                justify-content: flex-start;
+                padding-bottom: 5px;
+                margin-bottom: 15px;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none; /* Firefox */
+            }
+            .nav-tabs::-webkit-scrollbar {
+                display: none; /* Chrome/Safari */
+            }
+            .nav-tab {
+                padding: 12px 16px;
+                font-size: 0.95rem;
+                border-bottom-width: 3px;
             }
         }
 
-        @media (max-width: 400px) {
+        @media (max-width: 480px) {
             .stats {
-                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                grid-template-columns: 1fr 1fr; /* 2 columns on small screens */
             }
-            
-            .dashboard-header h2 {
-                font-size: 1.3rem;
+            .service-actions, .card-actions {
+                grid-template-columns: 1fr; /* Stack buttons on very small screens */
             }
         }
 
@@ -385,6 +427,16 @@
             display: none; /* Hidden by default */
         }
         
+        #telegram-card {
+            border-left: 3px solid #22c55e;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            display: none; /* Hidden by default */
+        }
+        
         .bot-status-indicator {
             display: inline-block;
             width: 12px;
@@ -399,6 +451,8 @@
             align-items: center;
             font-size: 1.1em;
             font-weight: bold;
+            flex: 1; /* Allow info to take available space */
+            min-width: 250px; /* Prevent crushing on small screens */
         }
 
         .bot-details {
@@ -406,6 +460,11 @@
             font-size: 0.9em;
             margin-left: 10px;
             font-weight: normal;
+        }
+        
+        .bot-actions {
+            display: flex;
+            gap: 10px;
         }
 
         /* Events Log */
@@ -443,16 +502,22 @@
         }
 
         @media (max-width: 600px) {
-            #bot-card {
+            #bot-card, #telegram-card {
                 flex-direction: column;
-                align-items: flex-start;
+                align-items: stretch;
             }
-            #bot-card .bot-actions {
+            .bot-info {
+                width: 100%;
+                margin-bottom: 10px;
+                justify-content: flex-start;
+                min-width: 0; /* Override previous min-width */
+            }
+            .bot-actions {
                 width: 100%;
                 display: flex;
-                gap: 5px;
+                gap: 10px;
             }
-            #bot-card .bot-actions button {
+            .bot-actions button {
                 flex: 1;
             }
         }
@@ -566,110 +631,36 @@
 
         .card-actions {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
         }
 
         .card-actions button {
             width: 100%;
             margin: 0;
-            min-height: 44px;
+            min-height: 40px;
+            padding: 5px;
+            font-size: 0.8rem;
         }
 
+        /* Removed redundant 640px media query */
         @media (max-width: 640px) {
-            body {
-                padding: 12px;
-                overflow-x: hidden;
-            }
-            
-            .table-responsive {
-                display: none;
-            }
-            
-            .mobile-containers {
-                display: flex;
-            }
-
-            input {
-                font-size: 16px !important;
-            }
-
-            .btn {
-                min-height: 44px;
-                padding: 10px 16px;
-                font-size: 0.875rem;
-            }
-            
-            .chart-wrap {
-                height: 140px;
-            }
-
-            /* Logs improvements */
-            #logs-container {
-                font-size: 0.875rem;
-                line-height: 1.7;
-                height: 50vh;
-                max-height: unset;
-            }
-            
-            #log-filter {
-                width: 100%;
-                font-size: 1rem;
-            }
-            
-            .logs-actions {
-                flex-direction: column;
-                width: 100%;
-            }
-            
-            .logs-actions button {
-                width: 100%;
-                padding: 12px;
-                margin-bottom: 8px;
-                margin-right: 0 !important;
-            }
-            
-            #events-log {
-                max-height: 150px;
-                font-size: 0.8rem;
-                line-height: 1.6;
-            }
-            
-            /* Bot Card Mobile */
-            #bot-card {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .bot-actions {
-                width: 100%;
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-            .bot-actions button {
-                width: 100%;
-            }
+            /* Kept for legacy if needed, but mostly handled by 768px block now */
         }
 
         @media (max-width: 400px) {
-            .dashboard-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-            }
-            .dashboard-header div {
-                width: 100%;
-                justify-content: space-between;
-                display: flex;
-            }
-            .btn-logout {
-                padding: 10px;
+            /* Stack buttons again on very small screens if needed, or keep 4 cols */
+            .card-actions {
+                 /* Let's try to keep 4 cols but maybe allow scroll if really tight? 
+                    Actually, for < 400px, 4 cols is tough. Let's revert to 2 cols for very small screens.
+                 */
+                 grid-template-columns: 1fr 1fr; 
             }
         }
         /* Services Section */
         #services-list {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 15px;
             margin-top: 10px;
         }
@@ -678,43 +669,53 @@
             background: var(--card-bg);
             border: 1px solid rgba(128,128,128,0.2);
             border-radius: 8px;
-            padding: 15px;
+            padding: 10px; /* Compact padding */
             box-shadow: 0 2px 5px var(--card-shadow);
             width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .service-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
-            font-size: 1.1rem;
+            margin-bottom: 8px;
+            font-size: 1rem;
             font-weight: bold;
         }
 
         .service-details {
-            margin-bottom: 15px;
-            font-size: 0.9rem;
+            margin-bottom: 10px;
+            font-size: 0.85rem;
             color: var(--text-muted);
-            line-height: 1.5;
+            line-height: 1.4;
+            flex-grow: 1;
         }
 
         .service-actions {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            grid-template-columns: 1fr 1fr; /* 2 columns for buttons */
+            gap: 5px;
         }
 
         .service-actions button {
             width: 100%;
             margin: 0;
-            min-height: 44px;
+            min-height: 36px; /* Compact buttons */
+            padding: 4px;
+            font-size: 0.8rem;
         }
 
-        @media (max-width: 600px) {
-            .service-actions {
-                grid-template-columns: 1fr 1fr;
+        @media (max-width: 768px) {
+            #services-list {
+                grid-template-columns: 1fr; /* Stack on mobile */
             }
+        }
+        
+        @media (max-width: 400px) {
+            /* No special override needed for actions, 2 cols is fine */
         }
         /* Terminal Section */
         #terminal-output {
@@ -750,6 +751,89 @@
         .telegram-indicator {
             background-color: #24A1DE !important;
         }
+
+        /* --- Navigation Tabs (Feature: Better UX) --- */
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(128,128,128,0.1);
+            padding-bottom: 0;
+            overflow-x: auto;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--text-muted);
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            color: var(--text-color);
+            background-color: rgba(128,128,128,0.05);
+            border-radius: 5px 5px 0 0;
+        }
+
+        .nav-tab.active {
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+        }
+        
+        body.dark-mode .nav-tab.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+
+        /* View Sections */
+        .view-section {
+            display: none; /* Hidden by default */
+            width: 100%;
+            max-width: 1000px;
+            flex-direction: column;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .view-section.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Loading Spinner for Buttons */
+        .btn-loading {
+            position: relative;
+            color: transparent !important;
+            pointer-events: none;
+        }
+        .btn-loading::after {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
     </style>
 </head>
 <body>
@@ -771,7 +855,7 @@
         <div class="dashboard-header">
             <div style="display: flex; flex-direction: column;">
                 <h2 style="margin-bottom: 5px;">VPS Dashboard <span id="event-badge" class="badge">0</span></h2>
-                <span id="greeting-text" style="color: var(--text-muted); font-size: 0.9rem;">Bem vindo</span>
+                <span id="greeting-text" style="color: var(--text-muted); font-size: 1.2rem; font-weight: 500;">Bem vindo</span>
             </div>
             <div style="display: flex; align-items: center; gap: 10px;">
                 <button onclick="toggleTheme()" class="btn" style="background-color: transparent; border: 1px solid var(--text-muted); color: var(--text-color); min-height: 36px; padding: 0 10px;" title="Alternar Tema">
@@ -784,10 +868,20 @@
             </div>
         </div>
 
-        <div id="alert-banner"></div>
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-target="overview" onclick="switchView('overview')">📊 Visão Geral</button>
+            <button class="nav-tab" data-target="containers" onclick="switchView('containers')">🐳 Containers</button>
+            <button class="nav-tab" data-target="services" onclick="switchView('services')">⚙️ Serviços</button>
+            <button class="nav-tab" data-target="terminal" onclick="switchView('terminal')">💻 Terminal</button>
+        </div>
 
-        <!-- Bot Card -->
-        <div id="bot-card" class="container">
+        <!-- VIEW: OVERVIEW -->
+        <div id="view-overview" class="view-section active">
+            <div id="alert-banner"></div>
+
+            <!-- Bot Card -->
+            <div id="bot-card" class="container">
             <div class="bot-info">
                 <span id="bot-indicator" class="bot-status-indicator"></span>
                 <span>🤖 WhatsApp Bot</span>
@@ -844,9 +938,13 @@
                 <canvas id="metricsChart"></canvas>
             </div>
         </div>
+        
+        </div> <!-- End Overview -->
 
-        <div class="container">
-            <h3>Docker Containers</h3>
+        <!-- VIEW: CONTAINERS -->
+        <div id="view-containers" class="view-section">
+            <div class="container">
+                <h3>Docker Containers</h3>
             <input id="container-filter" type="text" placeholder="🔍 Filtrar por nome..." oninput="filterContainers()" title="Pressione / para focar"
                    style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
             <div class="table-responsive">
@@ -868,7 +966,10 @@
             </div>
             <div id="mobile-containers" class="mobile-containers"></div>
         </div>
+        </div> <!-- End Containers -->
 
+        <!-- VIEW: SERVICES -->
+        <div id="view-services" class="view-section">
         <div class="container" id="services-section">
             <h3>Serviços systemd</h3>
             <input id="service-filter" type="text" placeholder="🔍 Filtrar por nome..." oninput="filterServices()" 
@@ -877,13 +978,18 @@
                 <!-- Service cards will be added here -->
             </div>
         </div>
+        </div> <!-- End Services -->
 
+        <!-- VIEW: TERMINAL -->
+        <div id="view-terminal" class="view-section">
         <div class="container" id="terminal-section">
             <h3>Terminal Web</h3>
             <div id="terminal-output">Bem-vindo ao Terminal Web. Digite um comando abaixo.</div>
             <input type="text" id="terminal-input" placeholder="root@vps:~$ (Enter para enviar)" autocomplete="off">
         </div>
+        </div> <!-- End Terminal -->
 
+        <!-- Events (Global) -->
         <div class="container" id="events-section">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                  <h3>Histórico de Eventos</h3>
@@ -1527,9 +1633,9 @@
                             <div>Status: <strong>${s.active} (${s.sub})</strong></div>
                         </div>
                         <div class="service-actions">
-                            <button class="btn-start" onclick="controlService('${name}', 'start')">Start</button>
-                            <button class="btn-stop" onclick="controlService('${name}', 'stop')" ${disabledAttr}>Stop</button>
-                            <button class="btn-restart" onclick="controlService('${name}', 'restart')" ${disabledAttr}>Restart</button>
+                            <button class="btn-start" onclick="controlService(this, '${name}', 'start')">Start</button>
+                            <button class="btn-stop" onclick="controlService(this, '${name}', 'stop')" ${disabledAttr}>Stop</button>
+                            <button class="btn-restart" onclick="controlService(this, '${name}', 'restart')" ${disabledAttr}>Restart</button>
                             <button class="btn-logs" onclick="viewServiceLogs('${name}')">Logs</button>
                         </div>
                     </div>
@@ -1539,8 +1645,9 @@
             list.innerHTML = html;
         }
 
-        async function controlService(name, action) {
+        async function controlService(btn, name, action) {
             if (!confirm(`Tem certeza que deseja executar ${action} em ${name}?`)) return;
+            setLoading(btn, true);
             try {
                 const res = await authFetch(`/api/service/${name}/${action}`, { method: 'POST' });
                 if (!res) return;
@@ -1554,6 +1661,8 @@
                 }
             } catch (error) {
                 alert("Error: " + error.message);
+            } finally {
+                setLoading(btn, false);
             }
         }
 
@@ -1719,7 +1828,7 @@
                     details.innerHTML = `<span style="font-weight: bold; color: ${color}">● ${data.state}</span>   ${data.status}`;
 
                     // Update Actions
-                    btnRestart.onclick = () => controlContainer(data.id, 'restart');
+                    btnRestart.onclick = (e) => controlContainer(e.target, data.id, 'restart');
                     btnLogs.onclick = () => viewLogs(data.id, botContainerName);
                     btnLogs.title = "Pressione B";
 
@@ -1788,7 +1897,7 @@
                     details.innerHTML = `<span style="font-weight: bold; color: ${statusColor}">● ${data.state}</span>   ${data.status}`;
 
                     // Update Actions
-                    btnRestart.onclick = () => controlContainer(data.id, 'restart');
+                    btnRestart.onclick = (e) => controlContainer(e.target, data.id, 'restart');
                     btnLogs.onclick = () => viewLogs(data.id, telegramBotContainerName);
 
                     // Notification Logic
@@ -1844,9 +1953,9 @@
                             <div><strong>Ports:</strong> ${portsStr}</div>
                         </div>
                         <div class="card-actions">
-                            <button class="btn-start" onclick="controlContainer('${c.Id}', 'start')" ${isRunning ? 'disabled' : ''}>Start</button>
-                            <button class="btn-stop" onclick="controlContainer('${c.Id}', 'stop')" ${!isRunning ? 'disabled' : ''}>Stop</button>
-                            <button class="btn-restart" onclick="controlContainer('${c.Id}', 'restart')">Restart</button>
+                            <button class="btn-start" onclick="controlContainer(this, '${c.Id}', 'start')" ${isRunning ? 'disabled' : ''}>Start</button>
+                            <button class="btn-stop" onclick="controlContainer(this, '${c.Id}', 'stop')" ${!isRunning ? 'disabled' : ''}>Stop</button>
+                            <button class="btn-restart" onclick="controlContainer(this, '${c.Id}', 'restart')">Restart</button>
                             <button class="btn-logs" onclick="viewLogs('${c.Id}', '${name}')">Logs</button>
                         </div>
                     </div>
@@ -1899,9 +2008,9 @@
                             <td style="font-size: 0.78rem; color: var(--text-muted);">${uptimeStr}</td>
                             <td class="${statusClass}">${c.State}</td>
                             <td>
-                                <button class="btn-start" onclick="controlContainer('${c.Id}', 'start')" ${isRunning ? 'disabled' : ''}>Start</button>
-                                <button class="btn-stop" onclick="controlContainer('${c.Id}', 'stop')" ${!isRunning ? 'disabled' : ''}>Stop</button>
-                                <button class="btn-restart" onclick="controlContainer('${c.Id}', 'restart')">Restart</button>
+                                <button class="btn-start" onclick="controlContainer(this, '${c.Id}', 'start')" ${isRunning ? 'disabled' : ''}>Start</button>
+                                <button class="btn-stop" onclick="controlContainer(this, '${c.Id}', 'stop')" ${!isRunning ? 'disabled' : ''}>Stop</button>
+                                <button class="btn-restart" onclick="controlContainer(this, '${c.Id}', 'restart')">Restart</button>
                                 <button class="btn-logs" onclick="viewLogs('${c.Id}', '${name}')">Logs</button>
                             </td>
                         </tr>
@@ -1941,8 +2050,9 @@
             }
         }
 
-        async function controlContainer(id, action) {
+        async function controlContainer(btn, id, action) {
             if (!confirm(`Are you sure you want to ${action} this container?`)) return;
+            setLoading(btn, true);
             try {
                 const res = await authFetch(`/api/container/${id}/${action}`, { method: 'POST' });
                 if (!res) return;
@@ -1953,6 +2063,8 @@
                 }
             } catch (error) {
                 alert("Error: " + error.message);
+            } finally {
+                setLoading(btn, false);
             }
         }
 
@@ -2262,6 +2374,45 @@
                     output.scrollTop = output.scrollHeight;
                 }
             });
+        }
+
+        // --- UX Improvements ---
+        function switchView(viewName) {
+            // Update Tabs
+            document.querySelectorAll('.nav-tab').forEach(t => {
+                t.classList.remove('active');
+                if (t.getAttribute('data-target') === viewName) {
+                    t.classList.add('active');
+                }
+            });
+
+            // Update Views
+            document.querySelectorAll('.view-section').forEach(v => {
+                v.classList.remove('active');
+            });
+            const target = document.getElementById(`view-${viewName}`);
+            if (target) {
+                target.classList.add('active');
+                // Save preference
+                localStorage.setItem('last_view', viewName);
+            }
+        }
+
+        // Restore last view
+        const lastView = localStorage.getItem('last_view');
+        if (lastView) {
+            switchView(lastView);
+        }
+
+        function setLoading(btn, isLoading) {
+            if (!btn) return;
+            if (isLoading) {
+                btn.classList.add('btn-loading');
+                btn.disabled = true;
+            } else {
+                btn.classList.remove('btn-loading');
+                btn.disabled = false;
+            }
         }
 
         // --- Init ---
