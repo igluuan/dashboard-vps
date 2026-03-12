@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPS Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        :root {
+            --bg-color: #f4f4f9;
+            --text-color: #333;
+            --card-bg: white;
+            --card-shadow: rgba(0,0,0,0.1);
+            --header-color: #333;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #18181b; /* zinc-900 */
+                --text-color: #e4e4e7; /* zinc-200 */
+                --card-bg: #27272a; /* zinc-800 */
+                --card-shadow: rgba(0,0,0,0.5);
+                --header-color: #f4f4f5; /* zinc-100 */
+            }
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h2, h3 {
+            color: var(--header-color);
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px var(--card-shadow);
+            margin-bottom: 20px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .stat-item {
+            padding: 15px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 5px;
+            min-width: 120px;
+        }
+
+        canvas {
+            max-height: 300px;
+            width: 100%;
+        }
+
+        /* Docker Containers Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid rgba(128,128,128,0.2);
+        }
+        th {
+            background-color: rgba(0,0,0,0.05);
+        }
+        
+        .status-running { color: green; font-weight: bold; }
+        .status-exited { color: red; font-weight: bold; }
+
+        button {
+            padding: 5px 10px;
+            margin-right: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 3px;
+            color: white;
+        }
+        .btn-start { background-color: #28a745; }
+        .btn-stop { background-color: #dc3545; }
+        .btn-restart { background-color: #ffc107; color: black; }
+        .btn-logs { background-color: #007bff; }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Logs Section */
+        #logs-container {
+            background-color: #1e1e1e;
+            color: #0f0;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 10px;
+            height: 300px;
+            overflow-y: scroll;
+            border-radius: 5px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Server Status</h2>
+        <div class="stats">
+            <div class="stat-item">
+                <h3>Uptime</h3>
+                <p id="uptime">Loading...</p>
+            </div>
+            <div class="stat-item">
+                <h3>CPU</h3>
+                <p id="cpu-val">0%</p>
+            </div>
+            <div class="stat-item">
+                <h3>RAM</h3>
+                <p id="ram-val">0%</p>
+            </div>
+            <div class="stat-item">
+                <h3>Disk</h3>
+                <p id="disk-val">0%</p>
+            </div>
+        </div>
+        <canvas id="metricsChart"></canvas>
+    </div>
+
+    <div class="container">
+        <h2>Docker Containers</h2>
+        <table id="containers-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Image</th>
+                    <th>State</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be added here -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="container" id="logs-section" style="display:none;">
+        <h2 id="logs-title">Logs</h2>
+        <div id="logs-container"></div>
+        <button onclick="closeLogs()" style="margin-top: 10px; background-color: #6c757d;">Close Logs</button>
+    </div>
+
+    <script>
+        const socket = io();
+        let currentLogContainerId = null;
+
+        // --- Charts & Metrics ---
+        const ctx = document.getElementById('metricsChart').getContext('2d');
+        const metricsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['CPU (%)', 'RAM (%)', 'Disk (%)'],
+                datasets: [{
+                    label: 'System Usage',
+                    data: [0, 0, 0],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.6)',
+                        'rgba(54, 162, 235, 0.6)',
+                        'rgba(255, 206, 86, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, max: 100 }
+                }
+            }
+        });
+
+        function formatUptime(seconds) {
+            const d = Math.floor(seconds / (3600*24));
+            const h = Math.floor(seconds % (3600*24) / 3600);
+            const m = Math.floor(seconds % 3600 / 60);
+            return `${d}d ${h}h ${m}m`;
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch("/stats");
+                const data = await res.json();
+
+                // Update Chart
+                metricsChart.data.datasets[0].data = [data.cpu, data.ram, data.disk];
+                metricsChart.update();
+
+                // Update Text
+                document.getElementById('uptime').innerText = formatUptime(data.uptime);
+                document.getElementById('cpu-val').innerText = data.cpu.toFixed(1) + '%';
+                document.getElementById('ram-val').innerText = data.ram.toFixed(1) + '%';
+                document.getElementById('disk-val').innerText = data.disk.toFixed(1) + '%';
+            } catch (error) {
+                console.error("Error fetching stats:", error);
+            }
+        }
+
+        // --- Docker Containers ---
+        async function loadContainers() {
+            try {
+                const res = await fetch("/api/containers");
+                const containers = await res.json();
+                const tbody = document.querySelector("#containers-table tbody");
+                tbody.innerHTML = "";
+
+                containers.forEach(c => {
+                    const name = c.Names[0].replace('/', '');
+                    const isRunning = c.State === 'running';
+                    const statusClass = isRunning ? 'status-running' : 'status-exited';
+                    
+                    const row = `
+                        <tr>
+                            <td>${name}</td>
+                            <td>${c.Image}</td>
+                            <td class="${statusClass}">${c.State}</td>
+                            <td>
+                                <button class="btn-start" onclick="controlContainer('${c.Id}', 'start')" ${isRunning ? 'disabled' : ''}>Start</button>
+                                <button class="btn-stop" onclick="controlContainer('${c.Id}', 'stop')" ${!isRunning ? 'disabled' : ''}>Stop</button>
+                                <button class="btn-restart" onclick="controlContainer('${c.Id}', 'restart')">Restart</button>
+                                <button class="btn-logs" onclick="viewLogs('${c.Id}', '${name}')">Logs</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error("Error fetching containers:", error);
+            }
+        }
+
+        async function controlContainer(id, action) {
+            if (!confirm(`Are you sure you want to ${action} this container?`)) return;
+            try {
+                const res = await fetch(`/api/container/${id}/${action}`, { method: 'POST' });
+                if (res.ok) {
+                    loadContainers(); // Refresh list
+                } else {
+                    alert("Error: " + await res.text());
+                }
+            } catch (error) {
+                alert("Error: " + error.message);
+            }
+        }
+
+        // --- Logs ---
+        function viewLogs(id, name) {
+            document.getElementById('logs-section').style.display = 'block';
+            document.getElementById('logs-title').innerText = `Logs: ${name}`;
+            const logContainer = document.getElementById('logs-container');
+            logContainer.innerHTML = 'Connecting to logs...\n';
+            
+            // Disconnect previous log stream if any (handled by server on new connection logic or simple re-emit)
+            // But here we might want to handle it cleanly if we could.
+            // For now, simple emit works as server handles new stream creation.
+            
+            // Clear previous logs
+            currentLogContainerId = id;
+            socket.emit('logs', id);
+        }
+
+        function closeLogs() {
+            document.getElementById('logs-section').style.display = 'none';
+            // Ideally we should tell server to stop streaming, but socket.io simple impl here
+            // We could emit a 'stop_logs' event if we implemented it server-side.
+        }
+
+        socket.on('log', (data) => {
+            const logContainer = document.getElementById('logs-container');
+            // Remove control characters for cleaner output if needed, but keeping raw is often better
+            logContainer.textContent += data; 
+            logContainer.scrollTop = logContainer.scrollHeight; // Auto-scroll
+        });
+
+        // --- Init ---
+        setInterval(loadStats, 2000);
+        loadStats();
+        
+        setInterval(loadContainers, 5000); // Refresh containers every 5s
+        loadContainers();
+
+    </script>
+
+</body>
+</html>
