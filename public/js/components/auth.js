@@ -109,8 +109,8 @@ const Auth = {
 
     // Start polling intervals
     window.statsInterval = setInterval(loadStats, 2000);
-    window.containersInterval = setInterval(Containers.load, 5000);
-    window.servicesInterval = setInterval(Services.load, 10000);
+    window.containersInterval = setInterval(() => Containers.load(), 5000);
+    window.servicesInterval = setInterval(() => Services.load(), 10000);
 
     // Set greeting
     const greeting = document.getElementById('greeting-text');
