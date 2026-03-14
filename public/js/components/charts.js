@@ -9,115 +9,121 @@ const Charts = {
     cpu: [],
     ram: [],
     rx: [],
-    tx: []
+    tx: [],
   },
 
   /**
    * Initialize the chart
    */
   init() {
-    const ctx = document.getElementById('metricsChart');
+    const ctx = document.getElementById("metricsChart");
     if (!ctx) return;
+
+    // Destroy existing chart if it exists
+    if (this.chart) {
+      this.chart.destroy();
+      this.chart = null;
+    }
 
     const colors = Theme.getColors();
 
     this.chart = new Chart(ctx, {
-      type: 'line',
+      type: "line",
       data: {
-        labels: new Array(this.MAX_POINTS).fill(''),
+        labels: new Array(this.MAX_POINTS).fill(""),
         datasets: [
           {
-            label: 'CPU',
+            label: "CPU",
             data: [],
-            borderColor: '#ff6b6b',
-            backgroundColor: 'rgba(255, 107, 107, 0.08)',
+            borderColor: "#ff6b6b",
+            backgroundColor: "rgba(255, 107, 107, 0.08)",
             fill: true,
             tension: 0.4,
             pointRadius: 0,
             borderWidth: 2,
-            yAxisID: 'y'
+            yAxisID: "y",
           },
           {
-            label: 'RAM',
+            label: "RAM",
             data: [],
             borderColor: colors.accent,
-            backgroundColor: 'rgba(0, 212, 170, 0.08)',
+            backgroundColor: "rgba(0, 212, 170, 0.08)",
             fill: true,
             tension: 0.4,
             pointRadius: 0,
             borderWidth: 2,
-            yAxisID: 'y'
+            yAxisID: "y",
           },
           {
-            label: 'RX',
+            label: "RX",
             data: [],
-            borderColor: '#4ade80',
-            backgroundColor: 'transparent',
+            borderColor: "#4ade80",
+            backgroundColor: "transparent",
             borderDash: [4, 4],
             fill: false,
             tension: 0.4,
             pointRadius: 0,
             borderWidth: 1.5,
-            yAxisID: 'y1'
+            yAxisID: "y1",
           },
           {
-            label: 'TX',
+            label: "TX",
             data: [],
-            borderColor: '#60a5fa',
-            backgroundColor: 'transparent',
+            borderColor: "#60a5fa",
+            backgroundColor: "transparent",
             borderDash: [4, 4],
             fill: false,
             tension: 0.4,
             pointRadius: 0,
             borderWidth: 1.5,
-            yAxisID: 'y1'
-          }
-        ]
+            yAxisID: "y1",
+          },
+        ],
       },
       options: {
         animation: false,
         responsive: true,
         maintainAspectRatio: false,
         interaction: {
-          mode: 'index',
-          intersect: false
+          mode: "index",
+          intersect: false,
         },
         plugins: {
           legend: {
             display: true,
-            position: 'top',
+            position: "top",
             labels: {
               color: colors.textMuted,
               font: { size: 11, family: "'IBM Plex Sans', sans-serif" },
               boxWidth: 12,
               padding: 10,
-              usePointStyle: true
-            }
-          }
+              usePointStyle: true,
+            },
+          },
         },
         scales: {
           x: { display: false },
           y: {
-            type: 'linear',
+            type: "linear",
             display: true,
-            position: 'left',
+            position: "left",
             beginAtZero: true,
             max: 100,
             grid: { color: colors.grid },
             ticks: {
               color: colors.textMuted,
               font: { size: 10, family: "'JetBrains Mono', monospace" },
-              callback: (value) => value + '%'
-            }
+              callback: (value) => value + "%",
+            },
           },
           y1: {
-            type: 'linear',
+            type: "linear",
             display: false,
             beginAtZero: true,
-            grid: { drawOnChartArea: false }
-          }
-        }
-      }
+            grid: { drawOnChartArea: false },
+          },
+        },
+      },
     });
   },
 
@@ -147,7 +153,7 @@ const Charts = {
     this.chart.data.datasets[2].data = this.history.rx;
     this.chart.data.datasets[3].data = this.history.tx;
 
-    this.chart.update('none');
+    this.chart.update("none");
   },
 
   /**
@@ -158,11 +164,11 @@ const Charts = {
       cpu: [],
       ram: [],
       rx: [],
-      tx: []
+      tx: [],
     };
 
     if (this.chart) {
-      this.chart.data.datasets.forEach(ds => ds.data = []);
+      this.chart.data.datasets.forEach((ds) => (ds.data = []));
       this.chart.update();
     }
   },
@@ -179,10 +185,10 @@ const Charts = {
     this.chart.options.scales.y.grid.color = colors.grid;
     this.chart.options.scales.y.ticks.color = colors.textMuted;
     this.chart.data.datasets[1].borderColor = colors.accent;
-    this.chart.data.datasets[1].backgroundColor = colors.accent + '15';
+    this.chart.data.datasets[1].backgroundColor = colors.accent + "15";
 
     this.chart.update();
-  }
+  },
 };
 
 // Make available globally
