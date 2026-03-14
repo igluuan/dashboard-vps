@@ -32,6 +32,11 @@ const API = {
         return null;
       }
 
+      if (response.status === 404) {
+        console.error(`Endpoint not found: ${url}`);
+        return null;
+      }
+
       return response;
     } catch (error) {
       console.error('Fetch error:', error);
