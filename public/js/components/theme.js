@@ -7,13 +7,12 @@ const Theme = {
    * Initialize theme
    */
   init() {
-    // Check localStorage preference
+    // Check localStorage preference first, then system preference
     const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    if (savedTheme === 'light') {
+    if (savedTheme === 'light' || (!savedTheme && !prefersDark)) {
       document.body.classList.add('light-mode');
-    } else if (savedTheme === 'dark') {
-      document.body.classList.remove('light-mode');
     }
 
     this.updateIcon();
@@ -23,15 +22,14 @@ const Theme = {
    * Toggle between light and dark
    */
   toggle() {
-    const isDark = document.body.classList.contains('light-mode') === false;
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isLight = document.body.classList.contains('light-mode');
 
-    if (prefersDark) {
-      document.body.classList.add('light-mode');
-      localStorage.setItem('theme', 'light');
-    } else {
+    if (isLight) {
       document.body.classList.remove('light-mode');
       localStorage.setItem('theme', 'dark');
+    } else {
+      document.body.classList.add('light-mode');
+      localStorage.setItem('theme', 'light');
     }
 
     // Update chart colors
@@ -50,11 +48,8 @@ const Theme = {
     if (!icon) return;
 
     const isLight = document.body.classList.contains('light-mode');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
     if (isLight) {
-      icon.textContent = '☀️';
-    } else if (!prefersDark) {
       icon.textContent = '☀️';
     } else {
       icon.textContent = '🌙';
