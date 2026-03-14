@@ -82,7 +82,7 @@ const Auth = {
   /**
    * Initialize all dashboard components
    */
-  initComponents() {
+  async initComponents() {
     // Initialize theme
     Theme.init();
 
@@ -100,6 +100,12 @@ const Auth = {
 
     // Initialize socket
     Socket.init();
+
+    // Initialize settings
+    Settings.init();
+
+    // Load alert config
+    await Events.loadConfig();
 
     // Load initial data
     Bots.loadConfig();

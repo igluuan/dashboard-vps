@@ -19,6 +19,10 @@ if (process.env.DASHBOARD_TOKEN === 'troque_aqui') {
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, "public")));
+
+// Serve backup files
+app.use('/backups', express.static(path.join(__dirname, "backups")));
+
 app.use(express.json());
 
 // Auth Middleware
@@ -301,6 +305,97 @@ app.post("/api/container/:id/restart", async (req, res) => {
   }
 });
 
+// Alert Configuration - with defaults
+const ALERT_CONFIG = {
+  cpu: {
+    warning: parseFloat(process.env.ALERT_CPU_WARNING) || 70,
+    danger: parseFloat(process.env.ALERT_CPU_DANGER) || 85
+  },
+  ram: {
+    warning: parseFloat(process.env.ALERT_RAM_WARNING) || 70,
+    danger: parseFloat(process.env.ALERT_RAM_DANGER) || 85
+  },
+  disk: {
+    warning: parseFloat(process.env.ALERT_DISK_WARNING) || 80,
+    danger: parseFloat(process.env.ALERT_DISK_DANGER) || 90
+  },
+  enabled: true
+};
+
+// Get alert configuration
+app.get("/api/alerts/config", requireAuth, (req, res) => {
+  res.json(ALERT_CONFIG);
+});
+
+// Update alert configuration
+app.post("/api/alerts/config", requireAuth, (req, res) => {
+  const { cpu, ram, disk, enabled } = req.body;
+
+  if (cpu) {
+    if (cpu.warning !== undefined) ALERT_CONFIG.cpu.warning = Math.min(100, Math.max(0, cpu.warning));
+    if (cpu.danger !== undefined) ALERT_CONFIG.cpu.danger = Math.min(100, Math.max(0, cpu.danger));
+  }
+
+  if (ram) {
+    if (ram.warning !== undefined) ALERT_CONFIG.ram.warning = Math.min(100, Math.max(0, ram.warning));
+    if (ram.danger !== undefined) ALERT_CONFIG.ram.danger = Math.min(100, Math.max(0, ram.danger));
+  }
+
+  if (disk) {
+    if (disk.warning !== undefined) ALERT_CONFIG.disk.warning = Math.min(100, Math.max(0, disk.warning));
+    if (disk.danger !== undefined) ALERT_CONFIG.disk.danger = Math.min(100, Math.max(0, disk.danger));
+  }
+
+  if (enabled !== undefined) ALERT_CONFIG.enabled = enabled;
+
+  res.json(ALERT_CONFIG);
+});
+
+// Get current alert status based on metrics
+app.get("/api/alerts/status", requireAuth, async (req, res) => {
+  try {
+    const cpu = await si.currentLoad();
+    const mem = await si.mem();
+    const disk = await si.fsSize();
+
+    const alerts = [];
+
+    if (cpu.currentLoad >= ALERT_CONFIG.cpu.danger) {
+      alerts.push({ type: 'danger', metric: 'cpu', value: cpu.currentLoad, threshold: ALERT_CONFIG.cpu.danger });
+    } else if (cpu.currentLoad >= ALERT_CONFIG.cpu.warning) {
+      alerts.push({ type: 'warning', metric: 'cpu', value: cpu.currentLoad, threshold: ALERT_CONFIG.cpu.warning });
+    }
+
+    const ramPercent = (mem.used / mem.total) * 100;
+    if (ramPercent >= ALERT_CONFIG.ram.danger) {
+      alerts.push({ type: 'danger', metric: 'ram', value: ramPercent, threshold: ALERT_CONFIG.ram.danger });
+    } else if (ramPercent >= ALERT_CONFIG.ram.warning) {
+      alerts.push({ type: 'warning', metric: 'ram', value: ramPercent, threshold: ALERT_CONFIG.ram.warning });
+    }
+
+    if (disk[0]) {
+      if (disk[0].use >= ALERT_CONFIG.disk.danger) {
+        alerts.push({ type: 'danger', metric: 'disk', value: disk[0].use, threshold: ALERT_CONFIG.disk.danger });
+      } else if (disk[0].use >= ALERT_CONFIG.disk.warning) {
+        alerts.push({ type: 'warning', metric: 'disk', value: disk[0].use, threshold: ALERT_CONFIG.disk.warning });
+      }
+    }
+
+    res.json({
+      alerts,
+      config: ALERT_CONFIG,
+      metrics: {
+        cpu: cpu.currentLoad,
+        ram: ramPercent,
+        disk: disk[0]?.use || 0
+      }
+    });
+  } catch (error) {
+    console.error("Alert status error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 // WebSocket Auth
 io.use((socket, next) => {
     const token = socket.handshake.auth.token;
@@ -377,6 +472,147 @@ io.on("connection", (socket) => {
 });
 
 const PORT = process.env.PORT || 4000;
+
+// Backup Configuration
+const fs = require('fs');
+
+// Create backups directory if not exists
+const BACKUP_DIR = path.join(__dirname, 'backups');
+if (!fs.existsSync(BACKUP_DIR)) {
+  fs.mkdirSync(BACKUP_DIR, { recursive: true });
+}
+
+// Generate backup
+app.get("/api/config/backup", requireAuth, async (req, res) => {
+  try {
+    const backup = {
+      version: '1.0',
+      timestamp: new Date().toISOString(),
+      env: {},
+      docker: {},
+      services: []
+    };
+
+    // Read .env file (exclude sensitive values)
+    const envPath = path.join(__dirname, '.env');
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf-8');
+      envContent.split('\n').forEach(line => {
+        const [key, ...valueParts] = line.split('=');
+        if (key && valueParts.length > 0) {
+          // Mask sensitive values
+          if (key.includes('TOKEN') || key.includes('PASSWORD') || key.includes('SECRET')) {
+            backup.env[key] = '***HIDDEN***';
+          } else {
+            backup.env[key] = valueParts.join('=').trim();
+          }
+        }
+      });
+    }
+
+    // Get Docker containers info
+    const containers = await docker.listContainers({ all: true });
+    backup.docker.containers = containers.map(c => ({
+      name: c.Names[0]?.replace('/', ''),
+      image: c.Image,
+      state: c.State,
+      status: c.Status
+    }));
+
+    // Get systemd services (filtered)
+    exec("systemctl list-units --type=service --no-pager --output=json", (error, stdout) => {
+      if (!error) {
+        try {
+          const units = JSON.parse(stdout);
+          backup.services = units
+            .filter(u => u.load === 'loaded')
+            .map(u => ({
+              name: u.unit,
+              active: u.active,
+              sub: u.sub
+            }));
+        } catch (e) {}
+      }
+
+      // Generate filename
+      const filename = `backup-${new Date().toISOString().slice(0, 10)}.json`;
+      const filepath = path.join(BACKUP_DIR, filename);
+
+      fs.writeFileSync(filepath, JSON.stringify(backup, null, 2));
+
+      res.json({
+        success: true,
+        filename,
+        filepath: `/backups/${filename}`,
+        timestamp: backup.timestamp
+      });
+    });
+  } catch (error) {
+    console.error("Backup error:", error);
+    res.status(500).json({ error: "Erro ao criar backup" });
+  }
+});
+
+// List backups
+app.get("/api/config/backups", requireAuth, (req, res) => {
+  try {
+    const files = fs.readdirSync(BACKUP_DIR)
+      .filter(f => f.endsWith('.json'))
+      .map(f => {
+        const filepath = path.join(BACKUP_DIR, f);
+        const stats = fs.statSync(filepath);
+        return {
+          filename: f,
+          size: stats.size,
+          created: stats.birthtime
+        };
+      })
+      .sort((a, b) => b.created - a.created);
+
+    res.json(files);
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao listar backups" });
+  }
+});
+
+// Download backup
+app.get("/api/config/backups/:filename", requireAuth, (req, res) => {
+  const { filename } = req.params;
+  const filepath = path.join(BACKUP_DIR, filename);
+
+  if (!fs.existsSync(filepath)) {
+    return res.status(404).json({ error: "Backup não encontrado" });
+  }
+
+  res.download(filepath, filename);
+});
+
+// Restore from backup (preview - no actual restore for safety)
+app.post("/api/config/restore", requireAuth, (req, res) => {
+  // For safety, we don't automatically restore
+  // Instead, we provide a preview of what would be restored
+  const { config } = req.body;
+
+  if (!config) {
+    return res.status(400).json({ error: "Configuração inválida" });
+  }
+
+  // Validate backup structure
+  if (!config.timestamp || !config.version) {
+    return res.status(400).json({ error: "Formato de backup inválido" });
+  }
+
+  res.json({
+    success: true,
+    message: "Preview mode - restauração real precisa ser confirmada",
+    preview: {
+      timestamp: config.timestamp,
+      containerCount: config.docker?.containers?.length || 0,
+      serviceCount: config.services?.length || 0
+    }
+  });
+});
+
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });

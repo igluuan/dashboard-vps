@@ -151,6 +151,54 @@ const API = {
   },
 
   /**
+   * Get alert configuration
+   */
+  async getAlertConfig() {
+    const res = await this.fetch('/api/alerts/config');
+    if (!res) return null;
+    return res.json();
+  },
+
+  /**
+   * Update alert configuration
+   */
+  async updateAlertConfig(config) {
+    const res = await this.fetch('/api/alerts/config', {
+      method: 'POST',
+      body: JSON.stringify(config)
+    });
+    if (!res) return null;
+    return res.json();
+  },
+
+  /**
+   * Get current alert status
+   */
+  async getAlertStatus() {
+    const res = await this.fetch('/api/alerts/status');
+    if (!res) return null;
+    return res.json();
+  },
+
+  /**
+   * Create backup
+   */
+  async createBackup() {
+    const res = await this.fetch('/api/config/backup');
+    if (!res) return null;
+    return res.json();
+  },
+
+  /**
+   * List backups
+   */
+  async listBackups() {
+    const res = await this.fetch('/api/config/backups');
+    if (!res) return null;
+    return res.json();
+  },
+
+  /**
    * Login user
    */
   async login(token) {

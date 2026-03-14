@@ -66,6 +66,9 @@
                 </div>
             </div>
             <div class="dashboard-actions">
+                <button class="btn btn-icon btn-secondary" onclick="Modal.open('settings')" title="Configurações" aria-label="Configurações">
+                    <span>⚙️</span>
+                </button>
                 <button class="btn btn-icon btn-secondary" onclick="Theme.toggle()" title="Alternar tema" aria-label="Alternar tema">
                     <span id="theme-icon">🌙</span>
                 </button>
@@ -124,6 +127,36 @@
                     <div class="bot-icon">✈️</div>
                     <div class="bot-details">
                         <h4>Telegram Bot</h4>
+                        <span id="telegram-details">Carregando...</span>
+                    </div>
+                </div>
+                <div class="bot-actions">
+                    <button class="btn btn-sm btn-warning" onclick="Bots.restartBot('telegram')">Restart</button>
+                    <button class="btn btn-sm btn-secondary" onclick="Logs.openForBot('telegram')">Logs</button>
+                </div>
+            </div>
+
+            <!-- Backup Card -->
+            <div class="card mb-lg">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        Backup & Restore
+                    </h3>
+                </div>
+                <div class="flex gap-md items-center">
+                    <button class="btn btn-primary" onclick="Backup.create()">
+                        Criar Backup
+                    </button>
+                    <button class="btn btn-secondary" onclick="Backup.showList()">
+                        Ver Backups
+                    </button>
+                </div>
+            </div>
                         <span id="telegram-details">Carregando...</span>
                     </div>
                 </div>
@@ -359,6 +392,63 @@
         </footer>
     </div>
 
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay" role="dialog" aria-labelledby="settings-title" aria-hidden="true">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="settings-title">Configurações</h3>
+                <button class="modal-close" onclick="Modal.close('settings')" aria-label="Fechar">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <h4 class="mb-md">Limites de Alertas</h4>
+
+                <div class="flex flex-col gap-md">
+                    <!-- CPU Thresholds -->
+                    <div class="flex gap-md items-center">
+                        <label style="min-width: 60px;">CPU</label>
+                        <input type="number" id="alert-cpu-warning" class="form-input" placeholder="Aviso" min="0" max="100">
+                        <span>/</span>
+                        <input type="number" id="alert-cpu-danger" class="form-input" placeholder="Perigo" min="0" max="100">
+                        <span>%</span>
+                    </div>
+
+                    <!-- RAM Thresholds -->
+                    <div class="flex gap-md items-center">
+                        <label style="min-width: 60px;">RAM</label>
+                        <input type="number" id="alert-ram-warning" class="form-input" placeholder="Aviso" min="0" max="100">
+                        <span>/</span>
+                        <input type="number" id="alert-ram-danger" class="form-input" placeholder="Perigo" min="0" max="100">
+                        <span>%</span>
+                    </div>
+
+                    <!-- Disk Thresholds -->
+                    <div class="flex gap-md items-center">
+                        <label style="min-width: 60px;">Disco</label>
+                        <input type="number" id="alert-disk-warning" class="form-input" placeholder="Aviso" min="0" max="100">
+                        <span>/</span>
+                        <input type="number" id="alert-disk-danger" class="form-input" placeholder="Perigo" min="0" max="100">
+                        <span>%</span>
+                    </div>
+
+                    <!-- Enable/Disable Alerts -->
+                    <div class="flex gap-md items-center mt-md">
+                        <label class="switch">
+                            <input type="checkbox" id="alert-enabled" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <span>Habilitar alertas automáticos</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="Modal.close('settings')">Cancelar</button>
+                <button class="btn btn-primary" onclick="Settings.saveAlerts()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Keyboard Shortcuts Modal -->
     <div id="shortcuts-modal" class="modal-overlay" role="dialog" aria-labelledby="shortcuts-title" aria-hidden="true">
         <div class="modal">
@@ -397,6 +487,7 @@
     <script src="/js/utils/helpers.js"></script>
     <script src="/js/utils/api.js"></script>
     <script src="/js/components/notifications.js"></script>
+    <script src="/js/components/settings.js"></script>
     <script src="/js/components/theme.js"></script>
     <script src="/js/components/charts.js"></script>
     <script src="/js/components/containers.js"></script>
@@ -404,6 +495,7 @@
     <script src="/js/components/terminal.js"></script>
     <script src="/js/components/logs.js"></script>
     <script src="/js/components/bots.js"></script>
+    <script src="/js/components/backup.js"></script>
     <script src="/js/components/navigation.js"></script>
     <script src="/js/components/auth.js"></script>
     <script src="/js/app.js"></script>

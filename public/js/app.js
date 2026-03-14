@@ -149,7 +149,7 @@ async function loadStats() {
   Charts.update(stats);
 
   // Update alerts
-  Events.updateAlerts(stats.cpu, stats.ram);
+  Events.updateAlerts(stats.cpu, stats.ram, stats.disk);
 
   // Update bot status periodically
   Bots.loadBotStatus();

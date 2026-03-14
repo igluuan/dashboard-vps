@@ -5,6 +5,34 @@
 const Events = {
   activeEvents: new Map(),
   eventHistory: [],
+  alertConfig: {
+    cpu: { warning: 70, danger: 85 },
+    ram: { warning: 70, danger: 85 },
+    disk: { warning: 80, danger: 90 },
+    enabled: true
+  },
+  cooldowns: new Map(), // Prevent duplicate notifications
+
+  /**
+   * Load alert configuration from backend
+   */
+  async loadConfig() {
+    const config = await API.getAlertConfig();
+    if (config) {
+      this.alertConfig = config;
+    }
+  },
+
+  /**
+   * Save alert configuration to backend
+   */
+  async saveConfig(config) {
+    const saved = await API.updateAlertConfig(config);
+    if (saved) {
+      this.alertConfig = saved;
+      Events.push('success', 'Configuração de alertas salva');
+    }
+  },
 
   /**
    * Push a new event
@@ -127,15 +155,16 @@ const Events = {
   /**
    * Update alerts based on stats
    */
-  updateAlerts(cpu, ram) {
-    const warnThreshold = 70;
-    const dangerThreshold = 85;
+  updateAlerts(cpu, ram, disk = 0) {
+    if (!this.alertConfig.enabled) return;
+
+    const { cpu: cpuConfig, ram: ramConfig, disk: diskConfig } = this.alertConfig;
 
     // CPU check
-    if (cpu >= dangerThreshold) {
+    if (cpu >= cpuConfig.danger) {
       const msg = `CPU em ${cpu.toFixed(1)}%`;
       this.push('danger', `⚠ ${msg}`, 'cpu');
-    } else if (cpu >= warnThreshold) {
+    } else if (cpu >= cpuConfig.warning) {
       const msg = `CPU em ${cpu.toFixed(1)}%`;
       this.push('warning', `⚠ ${msg}`, 'cpu');
     } else {
@@ -143,14 +172,25 @@ const Events = {
     }
 
     // RAM check
-    if (ram >= dangerThreshold) {
+    if (ram >= ramConfig.danger) {
       const msg = `RAM em ${ram.toFixed(1)}%`;
       this.push('danger', `⚠ ${msg}`, 'ram');
-    } else if (ram >= warnThreshold) {
+    } else if (ram >= ramConfig.warning) {
       const msg = `RAM em ${ram.toFixed(1)}%`;
       this.push('warning', `⚠ ${msg}`, 'ram');
     } else {
       this.clear('ram', 'RAM voltou ao normal');
+    }
+
+    // Disk check
+    if (disk >= diskConfig.danger) {
+      const msg = `Disco em ${disk.toFixed(1)}%`;
+      this.push('danger', `⚠ ${msg}`, 'disk');
+    } else if (disk >= diskConfig.warning) {
+      const msg = `Disco em ${disk.toFixed(1)}%`;
+      this.push('warning', `⚠ ${msg}`, 'disk');
+    } else {
+      this.clear('disk', 'Disco voltou ao normal');
     }
 
     // Update banner
