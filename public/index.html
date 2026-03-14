@@ -401,43 +401,81 @@
             </div>
 
             <div class="modal-body">
-                <h4 class="mb-md">Limites de Alertas</h4>
+                <div class="tabs mb-md">
+                    <button class="tab-btn active" onclick="Settings.switchTab('alerts')">Alertas</button>
+                    <button class="tab-btn" onclick="Settings.switchTab('notifications')">Notificações</button>
+                </div>
 
-                <div class="flex flex-col gap-md">
-                    <!-- CPU Thresholds -->
-                    <div class="flex gap-md items-center">
-                        <label style="min-width: 60px;">CPU</label>
-                        <input type="number" id="alert-cpu-warning" class="form-input" placeholder="Aviso" min="0" max="100">
-                        <span>/</span>
-                        <input type="number" id="alert-cpu-danger" class="form-input" placeholder="Perigo" min="0" max="100">
-                        <span>%</span>
+                <div id="settings-tab-alerts">
+                    <h4 class="mb-md">Limites de Alertas</h4>
+
+                    <div class="flex flex-col gap-md">
+                        <!-- CPU Thresholds -->
+                        <div class="flex gap-md items-center">
+                            <label style="min-width: 60px;">CPU</label>
+                            <input type="number" id="alert-cpu-warning" class="form-input" placeholder="Aviso" min="0" max="100">
+                            <span>/</span>
+                            <input type="number" id="alert-cpu-danger" class="form-input" placeholder="Perigo" min="0" max="100">
+                            <span>%</span>
+                        </div>
+
+                        <!-- RAM Thresholds -->
+                        <div class="flex gap-md items-center">
+                            <label style="min-width: 60px;">RAM</label>
+                            <input type="number" id="alert-ram-warning" class="form-input" placeholder="Aviso" min="0" max="100">
+                            <span>/</span>
+                            <input type="number" id="alert-ram-danger" class="form-input" placeholder="Perigo" min="0" max="100">
+                            <span>%</span>
+                        </div>
+
+                        <!-- Disk Thresholds -->
+                        <div class="flex gap-md items-center">
+                            <label style="min-width: 60px;">Disco</label>
+                            <input type="number" id="alert-disk-warning" class="form-input" placeholder="Aviso" min="0" max="100">
+                            <span>/</span>
+                            <input type="number" id="alert-disk-danger" class="form-input" placeholder="Perigo" min="0" max="100">
+                            <span>%</span>
+                        </div>
+
+                        <!-- Enable/Disable Alerts -->
+                        <div class="flex gap-md items-center mt-md">
+                            <label class="switch">
+                                <input type="checkbox" id="alert-enabled" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Habilitar alertas automáticos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="settings-tab-notifications" class="hidden">
+                    <h4 class="mb-md">Telegram</h4>
+                    <div class="flex flex-col gap-sm mb-lg">
+                        <div class="flex gap-md items-center">
+                            <label class="switch">
+                                <input type="checkbox" id="telegram-enabled">
+                                <span class="slider"></span>
+                            </label>
+                            <span>Habilitar Telegram</span>
+                        </div>
+                        <input type="text" id="telegram-token" class="form-input" placeholder="Bot Token">
+                        <input type="text" id="telegram-chat-id" class="form-input" placeholder="Chat ID">
+                        <button class="btn btn-sm btn-secondary" onclick="Settings.testNotification('telegram')">Testar Telegram</button>
                     </div>
 
-                    <!-- RAM Thresholds -->
-                    <div class="flex gap-md items-center">
-                        <label style="min-width: 60px;">RAM</label>
-                        <input type="number" id="alert-ram-warning" class="form-input" placeholder="Aviso" min="0" max="100">
-                        <span>/</span>
-                        <input type="number" id="alert-ram-danger" class="form-input" placeholder="Perigo" min="0" max="100">
-                        <span>%</span>
-                    </div>
-
-                    <!-- Disk Thresholds -->
-                    <div class="flex gap-md items-center">
-                        <label style="min-width: 60px;">Disco</label>
-                        <input type="number" id="alert-disk-warning" class="form-input" placeholder="Aviso" min="0" max="100">
-                        <span>/</span>
-                        <input type="number" id="alert-disk-danger" class="form-input" placeholder="Perigo" min="0" max="100">
-                        <span>%</span>
-                    </div>
-
-                    <!-- Enable/Disable Alerts -->
-                    <div class="flex gap-md items-center mt-md">
-                        <label class="switch">
-                            <input type="checkbox" id="alert-enabled" checked>
-                            <span class="slider"></span>
-                        </label>
-                        <span>Habilitar alertas automáticos</span>
+                    <h4 class="mb-md">WhatsApp</h4>
+                    <div class="flex flex-col gap-sm">
+                        <div class="flex gap-md items-center">
+                            <label class="switch">
+                                <input type="checkbox" id="whatsapp-enabled">
+                                <span class="slider"></span>
+                            </label>
+                            <span>Habilitar WhatsApp</span>
+                        </div>
+                        <input type="text" id="whatsapp-url" class="form-input" placeholder="API URL (Webhook)">
+                        <input type="text" id="whatsapp-auth" class="form-input" placeholder="Auth Key / API Key (Opcional)">
+                        <input type="text" id="whatsapp-number" class="form-input" placeholder="Número Destino (ex: 5511999999999)">
+                        <button class="btn btn-sm btn-secondary" onclick="Settings.testNotification('whatsapp')">Testar WhatsApp</button>
                     </div>
                 </div>
             </div>

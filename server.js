@@ -6,6 +6,8 @@ const http = require("http");
 const { Server } = require("socket.io");
 const Docker = require("dockerode");
 const { exec } = require("child_process");
+const monitorService = require("./services/monitorService");
+const notificationService = require("./services/notificationService");
 
 const app = express();
 const server = http.createServer(app);
@@ -272,38 +274,26 @@ app.get("/api/service/:name/logs", (req, res) => {
     });
 });
 
-// Start Container
-app.post("/api/container/:id/start", async (req, res) => {
+// Helper for container actions
+const makeContainerActionHandler = (action, successMessage) => async (req, res) => {
   try {
     const container = docker.getContainer(req.params.id);
-    await container.start();
-    res.send("started");
+    await container[action]();
+    res.send(successMessage);
   } catch (error) {
+    console.error(`Container ${action} error for ${req.params.id}:`, error);
     res.status(500).send(error.message);
   }
-});
+};
+
+// Start Container
+app.post("/api/container/:id/start", makeContainerActionHandler("start", "started"));
 
 // Stop Container
-app.post("/api/container/:id/stop", async (req, res) => {
-  try {
-    const container = docker.getContainer(req.params.id);
-    await container.stop();
-    res.send("stopped");
-  } catch (error) {
-    res.status(500).send(error.message);
-  }
-});
+app.post("/api/container/:id/stop", makeContainerActionHandler("stop", "stopped"));
 
 // Restart Container
-app.post("/api/container/:id/restart", async (req, res) => {
-  try {
-    const container = docker.getContainer(req.params.id);
-    await container.restart();
-    res.send("restarted");
-  } catch (error) {
-    res.status(500).send(error.message);
-  }
-});
+app.post("/api/container/:id/restart", makeContainerActionHandler("restart", "restarted"));
 
 // Alert Configuration - with defaults
 const ALERT_CONFIG = {
@@ -347,8 +337,42 @@ app.post("/api/alerts/config", requireAuth, (req, res) => {
   }
 
   if (enabled !== undefined) ALERT_CONFIG.enabled = enabled;
+  
+  // Atualiza o serviço de monitoramento
+  monitorService.updateThresholds(ALERT_CONFIG);
 
   res.json(ALERT_CONFIG);
+});
+
+// Notification Configuration
+app.get("/api/notifications/config", requireAuth, (req, res) => {
+    res.json(notificationService.getConfig());
+});
+
+app.post("/api/notifications/config", requireAuth, (req, res) => {
+    const config = req.body;
+    notificationService.updateConfig(config);
+    res.json(notificationService.getConfig());
+});
+
+// Test Notification
+app.post("/api/notifications/test", requireAuth, async (req, res) => {
+    const { type } = req.body; // 'telegram' or 'whatsapp'
+    
+    let success = false;
+    if (type === 'telegram') {
+        success = await notificationService.sendTelegram("🔔 Teste de notificação do VPS Dashboard");
+    } else if (type === 'whatsapp') {
+        success = await notificationService.sendWhatsApp("🔔 Teste de notificação do VPS Dashboard");
+    } else {
+        return res.status(400).json({ error: "Tipo inválido" });
+    }
+
+    if (success) {
+        res.json({ success: true });
+    } else {
+        res.status(500).json({ error: "Falha ao enviar notificação" });
+    }
 });
 
 // Get current alert status based on metrics
@@ -617,6 +641,14 @@ app.post("/api/config/restore", requireAuth, (req, res) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  // Inicia o monitoramento
+  monitorService.updateThresholds(ALERT_CONFIG);
+  monitorService.start();
+
+  server.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+  });
+}
+
+module.exports = { app, server, docker };

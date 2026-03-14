@@ -172,6 +172,39 @@ const API = {
   },
 
   /**
+   * Get notification configuration
+   */
+  async getNotificationConfig() {
+    const res = await this.fetch('/api/notifications/config');
+    if (!res) return null;
+    return res.json();
+  },
+
+  /**
+   * Update notification configuration
+   */
+  async updateNotificationConfig(config) {
+    const res = await this.fetch('/api/notifications/config', {
+      method: 'POST',
+      body: JSON.stringify(config)
+    });
+    if (!res) return null;
+    return res.json();
+  },
+
+  /**
+   * Test notification
+   */
+  async testNotification(type) {
+    const res = await this.fetch('/api/notifications/test', {
+      method: 'POST',
+      body: JSON.stringify({ type })
+    });
+    if (!res) return null;
+    return res.json();
+  },
+
+  /**
    * Get current alert status
    */
   async getAlertStatus() {
