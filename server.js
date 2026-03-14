@@ -520,8 +520,10 @@ app.get("/api/config/backup", requireAuth, async (req, res) => {
     }));
 
     // Get systemd services (filtered)
-    exec("systemctl list-units --type=service --no-pager --output=json", (error, stdout) => {
-      if (!error) {
+    exec("systemctl list-units --type=service --no-pager --output=json", { timeout: 10000 }, (error, stdout) => {
+      if (error) {
+        console.error('Systemd error:', error);
+      } else {
         try {
           const units = JSON.parse(stdout);
           backup.services = units
@@ -531,7 +533,9 @@ app.get("/api/config/backup", requireAuth, async (req, res) => {
               active: u.active,
               sub: u.sub
             }));
-        } catch (e) {}
+        } catch (e) {
+          console.error('Parse error:', e);
+        }
       }
 
       // Generate filename
