@@ -1,0 +1,103 @@
+/* Design Tokens - Industrial Utilitarian Aesthetic */
+:root {
+  /* Core Colors - Deep charcoal with cyan accents */
+  --bg-primary: #0d0d0f;
+  --bg-secondary: #141417;
+  --bg-tertiary: #1a1a1e;
+  --bg-elevated: #1e1e23;
+  --bg-card: #18181c;
+
+  --text-primary: #e8e8ea;
+  --text-secondary: #9898a0;
+  --text-muted: #5c5c66;
+
+  --accent-primary: #00d4aa;
+  --accent-secondary: #00a388;
+  --accent-glow: rgba(0, 212, 170, 0.15);
+
+  --danger: #ff4757;
+  --danger-dim: rgba(255, 71, 87, 0.15);
+  --warning: #ffa502;
+  --warning-dim: rgba(255, 165, 2, 0.15);
+  --success: #00d4aa;
+  --success-dim: rgba(0, 212, 170, 0.15);
+  --info: #3742fa;
+  --info-dim: rgba(55, 66, 250, 0.15);
+
+  /* Borders & Shadows */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-active: rgba(0, 212, 170, 0.3);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 30px var(--accent-glow);
+
+  /* Typography */
+  --font-display: 'IBM Plex Sans', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 400ms ease;
+}
+
+/* Light mode overrides */
+body.light-mode {
+  --bg-primary: #f5f5f7;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #eaeaec;
+  --bg-elevated: #ffffff;
+  --bg-card: #ffffff;
+
+  --text-primary: #1a1a1e;
+  --text-secondary: #5c5c66;
+  --text-muted: #9898a0;
+
+  --accent-primary: #00a388;
+  --accent-glow: rgba(0, 163, 136, 0.1);
+
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-active: rgba(0, 163, 136, 0.4);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* System preference dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #0d0d0f;
+    --bg-secondary: #141417;
+    --bg-tertiary: #1a1a1e;
+    --bg-elevated: #1e1e23;
+    --bg-card: #18181c;
+    --text-primary: #e8e8ea;
+    --text-secondary: #9898a0;
+    --text-muted: #5c5c66;
+    --border-subtle: rgba(255, 255, 255, 0.06);
+  }
+
+  body.light-mode {
+    --bg-primary: #f5f5f7;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #eaeaec;
+    --bg-elevated: #ffffff;
+    --bg-card: #ffffff;
+    --text-primary: #1a1a1e;
+    --text-secondary: #5c5c66;
+    --text-muted: #9898a0;
+    --border-subtle: rgba(0, 0, 0, 0.08);
+    --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.08);
+  }
+}
